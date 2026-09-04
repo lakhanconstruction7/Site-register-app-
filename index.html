@@ -1162,8 +1162,8 @@
       }
       await deleteSite(site.id);
       closeOverlay();
-      toast('Site deleted');
       backToSites();
+      await saveAndSyncToast('Site deleted');
     }
     document.getElementById('confirmDeleteSiteBtn').addEventListener('click', attemptDelete);
     pwInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') attemptDelete(); });
@@ -1177,6 +1177,7 @@
     await kvDelete(siteKey(id,'advances'));
     await kvDelete(siteKey(id,'expenses'));
     if(currentSiteId === id) currentSiteId = null;
+    await touchUpdated();
   }
 
   async function openSite(id){
@@ -1430,9 +1431,9 @@
   }
 
   async function pushToDrive(){
-    if(!driveConnected) return;
+    if(!driveConnected) return false;
     const ok = await ensureToken();
-    if(!ok){ setSyncStatus('offline'); return; }
+    if(!ok){ setSyncStatus('offline'); return false; }
     setSyncStatus('syncing');
     try{
       const updatedAt = await kvGet('lc:updated_at');
@@ -1461,7 +1462,17 @@
         if(!res.ok) throw new Error('update failed');
       }
       setSyncStatus('synced');
-    }catch(e){ console.error('Drive push failed:', e); setSyncStatus('offline'); }
+      return true;
+    }catch(e){ console.error('Drive push failed:', e); setSyncStatus('offline'); return false; }
+  }
+
+  // Force an immediate push (bypassing the debounce) right after an explicit
+  // Add/Save action, and tell the user exactly what happened.
+  async function saveAndSyncToast(baseMsg){
+    if(!driveConnected){ toast(`${baseMsg} — saved on this device`); return; }
+    clearTimeout(syncTimer);
+    const ok = await pushToDrive();
+    toast(ok ? `${baseMsg} — synced to Drive` : `${baseMsg} — saved locally, will retry sync`);
   }
 
   async function pullFromDrive(silent){
@@ -1980,36 +1991,69 @@
     if(editingEmpId){
       const emp = employees.find(e => e.id === editingEmpId);
       Object.assign(emp, data);
-      toast('Worker updated');
+      await saveEmployees();
+      closeOverlay();
+      renderEmployees();
+      await saveAndSyncToast('Worker updated');
     } else {
       data.id = uid();
       employees.push(data);
-      toast('Worker added');
+      await saveEmployees();
+      closeOverlay();
+      renderEmployees();
+      await saveAndSyncToast('Worker added');
     }
-    await saveEmployees();
-    closeOverlay();
-    renderEmployees();
   }
 
-  function confirmDeleteEmployee(emp){
+  function confirmPasswordAction(opts){
+    const { title, message, confirmLabel, onConfirm } = opts;
     const modal = document.getElementById('modalContent');
     modal.innerHTML = `
       <button class="close" id="closeModal">✕</button>
-      <h2>Remove Worker?</h2>
-      <p style="font-size:14px;color:var(--text-muted);line-height:1.5;">
-        This removes <b>${escapeHtml(emp.name)}</b> from the register. Their past attendance and advance records will be kept for your books, but they'll no longer appear in the active worker list.
-      </p>
-      <button class="btn-danger" style="width:100%;padding:12px;margin-top:14px;" id="confirmDelBtn">Remove Worker</button>
-      <button class="btn-ghost" style="width:100%;padding:12px;margin-top:8px;" id="cancelDelBtn">Cancel</button>
+      <h2>${title}</h2>
+      <p class="danger-hint">${message}</p>
+      <div class="field"><label>Password</label><input type="password" id="pwConfirmInput" placeholder="Enter password" autocomplete="off" /></div>
+      <p class="login-error" id="pwConfirmError" style="margin-top:-8px;">Incorrect password. Try again.</p>
+      <button class="btn-danger" style="width:100%;padding:13px;" id="pwConfirmBtn">${confirmLabel}</button>
+      <button class="btn-ghost" style="width:100%;padding:13px;margin-top:8px;" id="pwCancelBtn">Cancel</button>
     `;
+    showOverlay();
     document.getElementById('closeModal').addEventListener('click', closeOverlay);
-    document.getElementById('cancelDelBtn').addEventListener('click', closeOverlay);
-    document.getElementById('confirmDelBtn').addEventListener('click', async () => {
-      employees = employees.filter(e => e.id !== emp.id);
-      await saveEmployees();
+    document.getElementById('pwCancelBtn').addEventListener('click', closeOverlay);
+    const pwInput = document.getElementById('pwConfirmInput');
+    const errEl = document.getElementById('pwConfirmError');
+    setTimeout(() => pwInput.focus(), 150);
+    async function attempt(){
+      if(pwInput.value !== APP_PASSWORD){
+        errEl.style.display = 'block';
+        pwInput.value = '';
+        pwInput.focus();
+        return;
+      }
       closeOverlay();
-      toast('Worker removed');
-      renderEmployees();
+      await onConfirm();
+    }
+    document.getElementById('pwConfirmBtn').addEventListener('click', attempt);
+    pwInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') attempt(); });
+  }
+
+  function confirmDeleteEmployee(emp){
+    confirmPasswordAction({
+      title: 'Remove Worker?',
+      message: `This permanently removes <b>${escapeHtml(emp.name)}</b>, along with all of their attendance and advance records. This can't be undone. Enter the password to confirm.`,
+      confirmLabel: 'Remove Worker Permanently',
+      onConfirm: async () => {
+        employees = employees.filter(e => e.id !== emp.id);
+        advances = advances.filter(a => a.empId !== emp.id);
+        Object.keys(attendance).forEach(date => {
+          if(attendance[date] && attendance[date][emp.id]) delete attendance[date][emp.id];
+        });
+        await saveEmployees();
+        await saveAdvances();
+        await saveAttendance();
+        renderEmployees();
+        await saveAndSyncToast('Worker and their records removed');
+      }
     });
   }
 
@@ -2139,13 +2183,21 @@
 
   function wireDeleteButtons(container, afterDelete){
     container.querySelectorAll('.del').forEach(btn => {
-      btn.addEventListener('click', async (ev) => {
+      btn.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        advances = advances.filter(a => a.id !== btn.dataset.id);
-        await saveAdvances();
-        toast('Entry deleted');
-        renderEmployees();
-        afterDelete();
+        const id = btn.dataset.id;
+        confirmPasswordAction({
+          title: 'Delete This Advance?',
+          message: 'This permanently deletes this advance entry. This can\'t be undone. Enter the password to confirm.',
+          confirmLabel: 'Delete Entry',
+          onConfirm: async () => {
+            advances = advances.filter(a => a.id !== id);
+            await saveAdvances();
+            renderEmployees();
+            afterDelete();
+            await saveAndSyncToast('Entry deleted');
+          }
+        });
       });
     });
   }
@@ -2297,9 +2349,9 @@
     await saveAdvances();
     document.getElementById('advAmount').value = '';
     document.getElementById('advNote').value = '';
-    toast('Advance recorded');
     renderAdvances();
     renderEmployees();
+    await saveAndSyncToast('Advance recorded');
   });
 
   // ---------- Site Expenses ----------
@@ -2327,12 +2379,20 @@
 
   function wireExpenseDeleteButtons(container){
     container.querySelectorAll('.del').forEach(btn => {
-      btn.addEventListener('click', async (ev) => {
+      btn.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        expenses = expenses.filter(x => x.id !== btn.dataset.id);
-        await saveExpenses();
-        toast('Entry deleted');
-        renderExpenses();
+        const id = btn.dataset.id;
+        confirmPasswordAction({
+          title: 'Delete This Expense?',
+          message: 'This permanently deletes this expense entry. This can\'t be undone. Enter the password to confirm.',
+          confirmLabel: 'Delete Entry',
+          onConfirm: async () => {
+            expenses = expenses.filter(x => x.id !== id);
+            await saveExpenses();
+            renderExpenses();
+            await saveAndSyncToast('Entry deleted');
+          }
+        });
       });
     });
   }
@@ -2394,8 +2454,8 @@
     await saveExpenses();
     document.getElementById('expAmount').value = '';
     document.getElementById('expNote').value = '';
-    toast('Expense recorded');
     renderExpenses();
+    await saveAndSyncToast('Expense recorded');
   });
 
   // ---------- Reports ----------
