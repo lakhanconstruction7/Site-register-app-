@@ -61,6 +61,20 @@
     background:var(--bg);
     position:relative;
   }
+  @media (min-width:640px){
+    body{ background:var(--line); }
+    #app{ max-width:600px; box-shadow:0 0 0 1px var(--line), 0 8px 40px rgba(23,24,28,0.12); }
+  }
+  @media (min-width:900px){
+    #app{ max-width:760px; }
+  }
+  @media (min-width:1280px){
+    #app{ max-width:900px; }
+  }
+  @media (min-width:640px){
+    [data-theme="dark"] body{ background:#161616; }
+    [data-theme="dark"] #app{ box-shadow:0 0 0 1px #2a2a2a, 0 8px 40px rgba(0,0,0,0.4); }
+  }
   .screen{ display:flex; flex-direction:column; min-height:100vh; }
   .screen.hidden{ display:none; }
 
@@ -139,6 +153,12 @@
     border:none; outline:none; background:transparent; width:100%;
     font-size:15px; color:var(--text);
   }
+  .sort-select{
+    display:block; width:100%; margin-bottom:14px; margin-top:-6px;
+    background:var(--paper); border:1px solid var(--line); border-radius:12px;
+    padding:9px 12px; font-size:13.5px; font-family:var(--font-display); font-weight:600;
+    color:var(--text-muted); outline:none;
+  }
 
   /* Employee card */
   .emp-card{
@@ -199,10 +219,14 @@
   }
   nav.bottomnav .tabs{
     display:flex;
+    overflow-x:auto;
+    scrollbar-width:none;
   }
+  nav.bottomnav .tabs::-webkit-scrollbar{ display:none; }
   nav.bottomnav button{
-    flex:1; background:none; border:none; color:#84828A;
-    padding:13px 4px 12px; cursor:pointer;
+    flex:0 0 auto; min-width:62px;
+    background:none; border:none; color:#84828A;
+    padding:13px 8px 12px; cursor:pointer;
     display:flex; flex-direction:column; align-items:center; gap:4px;
   }
   nav.bottomnav button .ic{ font-size:19px; line-height:1; }
@@ -513,6 +537,8 @@
     cursor:pointer; flex-shrink:0;
   }
   .icon-btn svg{ width:17px; height:17px; }
+  .icon-btn.spinning svg{ animation: spin 0.8s linear infinite; }
+  @keyframes spin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
   .icon{ display:inline-flex; }
   .icon svg{ width:1em; height:1em; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; display:block; }
 
@@ -533,7 +559,7 @@
   .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:12px; }
   .cal-dow{ text-align:center; font-size:10px; font-weight:700; color:var(--text-muted); padding-bottom:2px; }
   .cal-cell{
-    min-height:52px; border-radius:9px; background:var(--bg); border:1px solid var(--line);
+    min-height:58px; border-radius:9px; background:var(--bg); border:1px solid var(--line);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     font-size:12px; font-weight:700; color:var(--text-muted); gap:2px; padding:5px 2px;
   }
@@ -542,7 +568,11 @@
   .cal-cell.cal-a{ background:var(--red-soft); border-color:transparent; color:var(--red); }
   .cal-cell.cal-h{ background:var(--amber-soft); border-color:transparent; color:var(--accent-dark); }
   .cal-cell.cal-adv{ background:var(--blue-soft); border-color:transparent; color:var(--blue); }
-  .cal-amt{ font-size:9px; font-weight:800; letter-spacing:0.1px; line-height:1.1; }
+  .cal-cell.cal-work-day{ background:var(--blue-soft); border-color:transparent; }
+  .cal-cell.cal-adv-day{ background:var(--amber-soft); border-color:transparent; }
+  .cal-amt-work{ color:var(--blue); }
+  .cal-amt-adv{ color:var(--accent-dark); }
+  .cal-amt{ font-size:9px; font-weight:800; letter-spacing:0.1px; line-height:1.3; }
   .cal-day{ font-size:12px; }
   .cal-status{ font-size:10px; font-weight:800; letter-spacing:0.3px; line-height:1; }
   .cal-ot{ font-size:9.5px; font-weight:700; color:var(--blue); line-height:1; }
@@ -587,6 +617,7 @@
             <div class="sub">Choose a Site</div>
           </div>
         </div>
+        <button class="icon-btn" id="topSyncBtn" title="Sync now"><span class="icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4"/><path d="M21 3v6h-6"/><path d="M3 21v-6h6"/></svg></span></button>
         <button class="icon-btn" id="lockBtn" title="Lock app"><span class="icon"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></button>
         <button class="icon-btn" id="globalSettingsBtn" title="Appearance"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z"/></svg></span></button>
       </div>
@@ -622,6 +653,7 @@
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
         <div class="count" id="headerCount">0 workers</div>
+        <button class="icon-btn" id="topSyncBtnSite" title="Sync now"><span class="icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4"/><path d="M21 3v6h-6"/><path d="M3 21v-6h6"/></svg></span></button>
         <button class="icon-btn" id="renameSiteBtn" title="Rename site"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></span></button>
         <button class="icon-btn" id="settingsBtn" title="Appearance"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z"/></svg></span></button>
       </div>
@@ -640,6 +672,11 @@
         <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
         <input type="text" id="empSearch" placeholder="Search by name or phone" />
       </div>
+      <select class="sort-select" id="empSort">
+        <option value="name">Sort: Name (A–Z)</option>
+        <option value="added">Sort: Recently added</option>
+        <option value="modified">Sort: Recently modified</option>
+      </select>
       <div id="empList"></div>
     </section>
 
@@ -655,6 +692,10 @@
         <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
         <input type="text" id="attSearch" placeholder="Search by name or phone" />
       </div>
+      <select class="sort-select" id="attSort">
+        <option value="name">Sort: Name (A–Z)</option>
+        <option value="modified">Sort: Recently modified</option>
+      </select>
       <div id="attList"></div>
     </section>
 
@@ -696,6 +737,16 @@
 
       <div id="advOverall">
         <div class="card-block summary-list" id="advMonthTotals"></div>
+        <div class="search" style="margin-top:12px;">
+          <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+          <input type="text" id="advSearch" placeholder="Filter by worker name or note" />
+        </div>
+        <select class="sort-select" id="advSort">
+          <option value="date_desc">Sort: Latest entry date</option>
+          <option value="date_asc">Sort: Oldest entry date</option>
+          <option value="name">Sort: Worker name (A–Z)</option>
+          <option value="modified">Sort: Recently modified</option>
+        </select>
         <div class="eyebrow" id="advLogLabel">All entries</div>
         <div id="advLog"></div>
       </div>
@@ -718,19 +769,17 @@
       <div class="eyebrow">Record a site expense</div>
       <div class="card-block">
         <div class="field">
+          <label>Paid to / Contractor name (optional)</label>
+          <input type="text" id="expPayee" placeholder="e.g. Ramesh (Plumber contractor)" />
+        </div>
+        <div class="field">
           <label>Category</label>
           <select id="expCategory">
             <option value="Material">Material purchase</option>
             <option value="Machinery">Machinery cost</option>
             <option value="Labour (Chowk)">Extra labour (Chowk)</option>
             <option value="Transport">Transport / Fuel</option>
-            <option value="Steel">Steel</option>
-            <option value="Plaster">Plaster</option>
-            <option value="Tiles">Tiles</option>
-            <option value="Fabrication">Fabrication</option>
-            <option value="Paint">Paint</option>
-            <option value="Electrician">Electrician</option>
-            <option value="Plumber">Plumber</option>
+            <option value="Food">Food</option>
             <option value="Other">Other</option>
           </select>
         </div>
@@ -759,8 +808,167 @@
       </div>
 
       <div class="card-block summary-list" id="expTotals"></div>
+      <div class="search" style="margin-top:12px;">
+        <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+        <input type="text" id="expSearch" placeholder="Filter by name, category or note" />
+      </div>
+      <select class="sort-select" id="expSort" style="margin-top:10px;">
+        <option value="date_desc">Sort: Latest entry date</option>
+        <option value="date_asc">Sort: Oldest entry date</option>
+        <option value="name">Sort: Name (A–Z)</option>
+        <option value="modified">Sort: Recently modified</option>
+      </select>
       <div class="eyebrow" id="expLogLabel">All entries</div>
       <div id="expLog"></div>
+    </section>
+
+    <!-- CONTRACTORS -->
+    <section class="panel" id="panel-contractors">
+      <div class="seg-toggle" id="conViewToggle">
+        <button class="seg-btn active" data-view="overall">All Contractors</button>
+        <button class="seg-btn" data-view="individual">Contractor Profile</button>
+      </div>
+
+      <div id="conOverall">
+        <div class="eyebrow">Add a contractor</div>
+        <div class="card-block">
+          <div class="field">
+            <label>Name</label>
+            <input type="text" id="conName" placeholder="e.g. Ramesh Kumar" />
+          </div>
+          <div class="field">
+            <label>Phone</label>
+            <input type="tel" id="conPhone" placeholder="10-digit mobile number" />
+          </div>
+          <div class="field">
+            <label>Category</label>
+            <select id="conCategory">
+              <option value="Shuttering">Shuttering</option>
+              <option value="Steel">Steel</option>
+              <option value="Plumber">Plumber</option>
+              <option value="Plaster">Plaster</option>
+              <option value="Paint">Paint</option>
+              <option value="Fabrication">Fabrication</option>
+              <option value="Electrician">Electrician</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <div class="field" style="flex:1;">
+              <label>Rate (₹)</label>
+              <input type="number" id="conRate" inputmode="decimal" placeholder="e.g. 45" />
+            </div>
+            <div class="field" style="flex:1;">
+              <label>Rate Unit</label>
+              <select id="conRateUnit">
+                <option value="Per Day">Per Day</option>
+                <option value="Per Bundle">Per Bundle</option>
+                <option value="Per Sq. Ft.">Per Sq. Ft.</option>
+                <option value="Per Meter">Per Meter</option>
+                <option value="Per Piece">Per Piece</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Note (optional)</label>
+            <input type="text" id="conNote" placeholder="Any other detail" />
+          </div>
+          <button class="btn-primary" id="addContractorBtn">Add Contractor</button>
+        </div>
+
+        <div class="eyebrow">Contractors</div>
+        <div class="search">
+          <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+          <input type="text" id="conSearch" placeholder="Search by name, category or phone" />
+        </div>
+        <select class="sort-select" id="conSort">
+          <option value="name">Sort: Name (A–Z)</option>
+          <option value="added">Sort: Recently added</option>
+          <option value="modified">Sort: Recently modified</option>
+        </select>
+        <div id="conList"></div>
+      </div>
+
+      <div id="conIndividual" style="display:none;">
+        <div class="field">
+          <label>Contractor</label>
+          <select id="conSelect"></select>
+        </div>
+        <div class="card-block" id="conProfileCard"></div>
+
+        <div class="seg-toggle" id="conPeriodToggle" style="margin-top:14px;">
+          <button class="seg-btn active" data-period="all">All Time</button>
+          <button class="seg-btn" data-period="month">This Month</button>
+        </div>
+
+        <div class="eyebrow">Calendar — advances & work, day by day</div>
+        <div class="date-row" style="margin-bottom:10px;">
+          <input type="month" id="conMonth" style="flex:1;" />
+        </div>
+        <div class="card-block" id="conCalendar"></div>
+
+        <div class="summary-chips" id="conStats"></div>
+
+        <div class="eyebrow">Add work entry</div>
+        <div class="card-block">
+          <div style="display:flex;gap:10px;">
+            <div class="field" style="flex:1;">
+              <label id="conQtyLabel">Work done (qty)</label>
+              <input type="number" id="conQty" inputmode="decimal" placeholder="e.g. 20" />
+            </div>
+            <div class="field" style="flex:1;">
+              <label>Unit</label>
+              <select id="conUnit">
+                <option value="Per Day">Per Day</option>
+                <option value="Per Bundle">Per Bundle</option>
+                <option value="Per Sq. Ft.">Per Sq. Ft.</option>
+                <option value="Per Meter">Per Meter</option>
+                <option value="Per Piece">Per Piece</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Rate for this entry (₹)</label>
+            <input type="number" id="conEntryRate" inputmode="decimal" placeholder="Defaults to contractor's rate" />
+          </div>
+          <div class="field">
+            <label>Advance given (₹, optional)</label>
+            <input type="number" id="conAdvance" inputmode="decimal" placeholder="0" />
+          </div>
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="conDate" />
+          </div>
+          <div class="field">
+            <label>Comment (optional)</label>
+            <input type="text" id="conComment" placeholder="e.g. 3rd floor slab shuttering" />
+          </div>
+          <button class="btn-primary" id="addConEntryBtn">Add Entry</button>
+        </div>
+
+        <div class="search" style="margin-top:6px;">
+          <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+          <input type="text" id="conLogSearch" placeholder="Filter by comment" />
+        </div>
+        <select class="sort-select" id="conLogSort">
+          <option value="date_desc">Sort: Latest entry date</option>
+          <option value="date_asc">Sort: Oldest entry date</option>
+          <option value="modified">Sort: Recently modified</option>
+        </select>
+        <div class="eyebrow" id="conLogLabel">All entries</div>
+        <div id="conLog"></div>
+
+        <div class="eyebrow">Download this contractor's data</div>
+        <div class="card-block">
+          <button class="btn-outline" id="conDownloadAllBtn" style="margin-top:0;">⬇ All-time (.xlsx)</button>
+          <div class="date-row" style="margin-top:10px;">
+            <input type="month" id="conDownloadMonth" style="flex:1;" />
+          </div>
+          <button class="btn-outline" id="conDownloadMonthBtn">⬇ Selected month only (.xlsx)</button>
+        </div>
+      </div>
     </section>
 
     <!-- REPORTS -->
@@ -802,44 +1010,9 @@
     <section class="panel" id="panel-backup">
       <div class="hero-block">
         <p class="big">Your data, always safe</p>
-        <p>Everything is saved automatically as you work — nothing is lost on refresh or when you close the app. Connect Google Drive below to keep <b>every site</b> synced live across your phones and computers.</p>
+        <p>Everything is saved automatically as you work — nothing is lost on refresh or when you close the app. Manage Google Drive sync (connect, disconnect, Client ID) from <b>Settings ⚙</b> on the home screen — it covers every site at once.</p>
       </div>
-
-      <div class="eyebrow">Google Drive sync</div>
-      <div class="card-block" id="driveCard">
-        <div class="status-row">
-          <span class="status-dot" id="driveDot"></span>
-          <div>
-            <div class="status-text" id="driveStatusText">Not connected</div>
-            <div class="status-sub" id="driveStatusSub">Turn this on to sync automatically across phones/computers</div>
-          </div>
-        </div>
-        <button class="btn-primary" id="driveConnectBtn">Connect Google Drive</button>
-        <button class="btn-outline" id="driveSyncNowBtn" style="display:none;">Sync now</button>
-        <button class="btn-outline" id="driveExcelBtn" style="display:none;">Save Excel copy to Drive</button>
-        <button class="btn-ghost" id="driveDisconnectBtn" style="display:none;width:100%;margin-top:9px;">Disconnect</button>
-        <p class="field-hint" id="driveLiveHint" style="display:none;margin-top:10px;">Changes push to Drive within a second, and other devices pick them up automatically — usually within a few seconds, or instantly when you switch back into the app.</p>
-
-        <details class="adv-setup" id="driveSetup">
-          <summary>Need to set this up? (one-time, ~10 min)</summary>
-          <div class="steps">
-            <ol style="margin:0;padding-left:16px;">
-              <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a> and create a free project.</li>
-              <li>Open <b>APIs & Services → Library</b>, search <b>Google Drive API</b>, click <b>Enable</b>.</li>
-              <li>Go to <b>APIs & Services → OAuth consent screen</b>, choose <b>External</b>, fill the basic app info, and add your own Google account under <b>Test users</b>.</li>
-              <li>Go to <b>Credentials → Create Credentials → OAuth client ID</b>, type <b>Web application</b>.</li>
-              <li>Under <b>Authorized JavaScript origins</b>, add the exact web address this site is hosted at (e.g. <code>https://yoursite.com</code>).</li>
-              <li>Copy the <b>Client ID</b> it gives you and paste it below.</li>
-            </ol>
-            <div class="field" style="margin-top:10px;">
-              <label>Google Client ID</label>
-              <input type="text" id="driveClientId" placeholder="xxxxxxxx.apps.googleusercontent.com" />
-              <div class="field-hint">Saved on this device only. You only need to do this once per hosting domain.</div>
-            </div>
-            <button class="btn-secondary" id="saveClientIdBtn" style="margin-top:2px;">Save Client ID</button>
-          </div>
-        </details>
-      </div>
+      <button class="btn-secondary" id="openSettingsFromBackupBtn" style="margin-bottom:6px;">⚙ Open Settings</button>
 
       <div class="eyebrow">Export period</div>
       <div class="card-block" style="padding-bottom:14px;">
@@ -858,6 +1031,8 @@
         <p style="font-size:13px;color:var(--text-muted);line-height:1.55;margin:0 0 12px;">One workbook with five sheets — Workers, Attendance, Advances, Site Expenses and Salary — built from <b id="exportSiteName">this site's</b> data for the period selected above.</p>
         <button class="btn-primary" id="exportBtn">⬇ Download Excel (.xlsx)</button>
         <button class="btn-secondary" id="emailBtn">✉ Open Email to Lakhanconstruction7@gmail.com</button>
+        <button class="btn-outline" id="driveExcelBtn" style="display:none;">Save Excel copy to Drive</button>
+        <p class="field-hint" id="driveExcelHint" style="display:block;">Connect Google Drive from Settings (⚙) on the home screen to also save a copy straight there.</p>
         <p class="export-note">
           <b>How records reach that email:</b> tap <b>Download</b> to save the workbook, then tap <b>Open Email</b> to start a draft to Lakhanconstruction7@gmail.com and attach the downloaded file before sending. If Google Drive is connected, use <b>Save Excel copy to Drive</b> above instead — no email needed.
         </p>
@@ -870,6 +1045,7 @@
         <button class="btn-outline" id="exportAdvancesBtn">⬇ Advances only (.xlsx)</button>
         <button class="btn-outline" id="exportExpensesBtn">⬇ Site expenses only (.xlsx)</button>
         <button class="btn-outline" id="exportSalaryBtn">⬇ Salary summary only (.xlsx)</button>
+        <button class="btn-outline" id="exportContractorsBtn">⬇ All contractors (.xlsx)</button>
       </div>
     </section>
 
@@ -883,6 +1059,7 @@
       <button data-tab="attendance"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></span></span><span class="lb">Attendance</span></button>
       <button data-tab="advances"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 6v.01M18 18v.01"/></svg></span></span><span class="lb">Advances</span></button>
       <button data-tab="expenses"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.8a3.3 3.3 0 0 0 0 6.6h4.4a3.3 3.3 0 0 1 0 6.6H6.5"/></svg></span></span><span class="lb">Expenses</span></button>
+      <button data-tab="contractors"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3"/><path d="M17.5 3.5 20.5 6.5l-2 2-3-3Z"/></svg></span></span><span class="lb">Contractors</span></button>
       <button data-tab="reports"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><rect x="5" y="12" width="3" height="9" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="3" height="14" fill="currentColor" stroke="none"/><rect x="16" y="15" width="3" height="6" fill="currentColor" stroke="none"/></svg></span></span><span class="lb">Reports</span></button>
       <button data-tab="backup"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17.5 19H6a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.7-2A4.5 4.5 0 0 1 17.5 19Z"/></svg></span></span><span class="lb">Backup</span></button>
     </div>
@@ -910,6 +1087,8 @@
   let attendance = {};  // {date: {empId: 'P'|'A'|'H'}} — scoped to currentSiteId
   let advances = [];    // {id, empId, date, amount, note} — scoped to currentSiteId
   let expenses = [];    // {id, date, category, amount, note} — site-level costs, scoped to currentSiteId
+  let contractors = []; // {id, name, phone, category, rate, rateUnit, note, createdAt, updatedAt} — scoped to currentSiteId
+  let contractorEntries = []; // {id, contractorId, date, qty, unit, rate, advance, comment, createdAt} — scoped to currentSiteId
   let currentTab = 'employees';
   let editingEmpId = null;
   let currentTheme = 'light';
@@ -1023,14 +1202,20 @@
     catch(e){ advances = []; }
     try{ const v = await kvGet(siteKey(id,'expenses')); expenses = v ? JSON.parse(v) : []; }
     catch(e){ expenses = []; }
+    try{ const v = await kvGet(siteKey(id,'contractors')); contractors = v ? JSON.parse(v) : []; }
+    catch(e){ contractors = []; }
+    try{ const v = await kvGet(siteKey(id,'contractorEntries')); contractorEntries = v ? JSON.parse(v) : []; }
+    catch(e){ contractorEntries = []; }
   }
   async function loadSiteDataRaw(id){
-    let e=[], a={}, adv=[], exp=[];
+    let e=[], a={}, adv=[], exp=[], con=[], conE=[];
     try{ const v = await kvGet(siteKey(id,'employees')); e = v ? JSON.parse(v) : []; }catch(err){}
     try{ const v = await kvGet(siteKey(id,'attendance')); a = v ? JSON.parse(v) : {}; }catch(err){}
     try{ const v = await kvGet(siteKey(id,'advances')); adv = v ? JSON.parse(v) : []; }catch(err){}
     try{ const v = await kvGet(siteKey(id,'expenses')); exp = v ? JSON.parse(v) : []; }catch(err){}
-    return { employees:e, attendance:a, advances:adv, expenses:exp };
+    try{ const v = await kvGet(siteKey(id,'contractors')); con = v ? JSON.parse(v) : []; }catch(err){}
+    try{ const v = await kvGet(siteKey(id,'contractorEntries')); conE = v ? JSON.parse(v) : []; }catch(err){}
+    return { employees:e, attendance:a, advances:adv, expenses:exp, contractors:con, contractorEntries:conE };
   }
 
   async function saveEmployees(){
@@ -1051,6 +1236,16 @@
   async function saveExpenses(){
     if(!currentSiteId) return;
     try{ await kvSet(siteKey(currentSiteId,'expenses'), JSON.stringify(expenses)); await touchUpdated(); }
+    catch(e){ toast('Could not save — try again'); }
+  }
+  async function saveContractors(){
+    if(!currentSiteId) return;
+    try{ await kvSet(siteKey(currentSiteId,'contractors'), JSON.stringify(contractors)); await touchUpdated(); }
+    catch(e){ toast('Could not save — try again'); }
+  }
+  async function saveContractorEntries(){
+    if(!currentSiteId) return;
+    try{ await kvSet(siteKey(currentSiteId,'contractorEntries'), JSON.stringify(contractorEntries)); await touchUpdated(); }
     catch(e){ toast('Could not save — try again'); }
   }
   async function touchUpdated(){
@@ -1176,6 +1371,8 @@
     await kvDelete(siteKey(id,'attendance'));
     await kvDelete(siteKey(id,'advances'));
     await kvDelete(siteKey(id,'expenses'));
+    await kvDelete(siteKey(id,'contractors'));
+    await kvDelete(siteKey(id,'contractorEntries'));
     if(currentSiteId === id) currentSiteId = null;
     await touchUpdated();
   }
@@ -1205,6 +1402,18 @@
   document.getElementById('renameSiteBtn').addEventListener('click', openRenameSiteModal);
   document.getElementById('globalSettingsBtn').addEventListener('click', openSettingsModal);
 
+  async function manualSyncNow(btnId){
+    if(!driveConnected){ toast('Connect Google Drive from Settings (⚙) first'); openSettingsModal(); return; }
+    const btn = document.getElementById(btnId);
+    if(btn) btn.classList.add('spinning');
+    toast('Syncing…');
+    await pullFromDrive();
+    await pushToDrive();
+    if(btn) btn.classList.remove('spinning');
+  }
+  document.getElementById('topSyncBtn').addEventListener('click', () => manualSyncNow('topSyncBtn'));
+  document.getElementById('topSyncBtnSite').addEventListener('click', () => manualSyncNow('topSyncBtnSite'));
+
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
   function toast(msg){
@@ -1223,16 +1432,16 @@
   // getDayEntry() also understands the older plain-string format for safety.
   function getDayEntry(date, empId){
     const raw = attendance[date] ? attendance[date][empId] : null;
-    if(!raw) return { status:'', ot:0 };
-    if(typeof raw === 'string') return { status: raw, ot: 0 };
-    return { status: raw.status || '', ot: Number(raw.ot) || 0 };
+    if(!raw) return { status:'', ot:0, updatedAt:'' };
+    if(typeof raw === 'string') return { status: raw, ot: 0, updatedAt:'' };
+    return { status: raw.status || '', ot: Number(raw.ot) || 0, updatedAt: raw.updatedAt || '' };
   }
   function setDayEntry(date, empId, patch){
     if(!attendance[date]) attendance[date] = {};
     const cur = getDayEntry(date, empId);
     const next = Object.assign({}, cur, patch);
     if(!next.status && !next.ot){ delete attendance[date][empId]; }
-    else{ attendance[date][empId] = next; }
+    else{ next.updatedAt = new Date().toISOString(); attendance[date][empId] = next; }
   }
 
   function presentDaysThisMonth(empId){
@@ -1315,18 +1524,20 @@
   function setSyncStatus(state, label){
     const pill = document.getElementById('syncPill');
     const pillText = document.getElementById('syncPillText');
-    pill.className = 'sync-pill ' + state;
+    if(pill) pill.className = 'sync-pill ' + state;
     const labels = {
       local: 'Saved on this device',
       synced: 'Synced to Google Drive',
       syncing: 'Syncing…',
       offline: 'Sync paused — check connection'
     };
-    pillText.textContent = label || labels[state] || labels.local;
+    if(pillText) pillText.textContent = label || labels[state] || labels.local;
 
+    // These live inside the Settings modal, so they only exist while it's open.
     const dot = document.getElementById('driveDot');
     const txt = document.getElementById('driveStatusText');
     const sub = document.getElementById('driveStatusSub');
+    if(!dot || !txt || !sub) return;
     if(state === 'synced'){ dot.className = 'status-dot on'; txt.textContent = 'Connected'; sub.textContent = 'Last synced just now'; }
     else if(state === 'syncing'){ dot.className = 'status-dot busy'; txt.textContent = 'Syncing…'; }
     else if(state === 'offline'){ dot.className = 'status-dot'; txt.textContent = 'Connected — sync failed'; sub.textContent = 'Will retry on next change'; }
@@ -1388,7 +1599,8 @@
 
   async function connectDrive(){
     if(!driveConfig.clientId){
-      document.getElementById('driveSetup').open = true;
+      const setup = document.getElementById('driveSetup');
+      if(setup) setup.open = true;
       toast('Add your Google Client ID first');
       return;
     }
@@ -1400,10 +1612,62 @@
     await kvSet('lc:drive_scope_v', '2');
     driveConnected = true;
     await kvSet('lc:drive_connected', 'true');
-    await pullFromDrive();
-    await pushToDrive();
+
+    // IMPORTANT: on a brand-new device/browser, a site may already have been
+    // created locally (the app requires one to proceed) before Drive is ever
+    // connected. That local "just created" timestamp can look newer than the
+    // real backup already sitting in Drive, which used to cause the empty
+    // new-device data to overwrite real data on first connect. To prevent
+    // that, connecting always trusts whatever is already in Drive — it only
+    // pushes this device's local data if Drive has nothing saved yet.
+    const hadRemoteData = await forcePullFromDriveOnConnect();
+    if(!hadRemoteData) await pushToDrive();
+
     updateDriveButtons();
-    toast('Google Drive connected');
+    startLiveSyncPolling();
+    toast(hadRemoteData ? 'Connected — pulled your existing data from Drive' : 'Google Drive connected');
+  }
+
+  // Used only at the moment of connecting: unconditionally pulls whatever is
+  // in Drive (ignoring local timestamps) and returns true if there was
+  // something to pull. Returns false if Drive has no backup yet, meaning
+  // this device's current local data should be treated as the starting point.
+  async function forcePullFromDriveOnConnect(){
+    const ok = await ensureToken();
+    if(!ok) return false;
+    try{
+      if(!driveFileId) driveFileId = await findDriveFile('lakhan-construction-data.json', 'appDataFolder');
+      if(!driveFileId) return false;
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+        headers:{ Authorization:`Bearer ${driveToken.access_token}` }
+      });
+      if(!res.ok) return false;
+      const remote = await res.json();
+      if(!remote || !Array.isArray(remote.sites)) return false;
+      sites = remote.sites || [];
+      await kvSet('lc:sites', JSON.stringify(sites));
+      const siteData = remote.siteData || {};
+      for(const id of Object.keys(siteData)){
+        await kvSet(siteKey(id,'employees'), JSON.stringify(siteData[id].employees || []));
+        await kvSet(siteKey(id,'attendance'), JSON.stringify(siteData[id].attendance || {}));
+        await kvSet(siteKey(id,'advances'), JSON.stringify(siteData[id].advances || []));
+        await kvSet(siteKey(id,'expenses'), JSON.stringify(siteData[id].expenses || []));
+        await kvSet(siteKey(id,'contractors'), JSON.stringify(siteData[id].contractors || []));
+        await kvSet(siteKey(id,'contractorEntries'), JSON.stringify(siteData[id].contractorEntries || []));
+      }
+      await kvSet('lc:updated_at', remote.updatedAt || new Date().toISOString());
+      if(currentSiteId){
+        if(sites.find(s => s.id === currentSiteId)){
+          await loadSiteData(currentSiteId);
+          renderEmployees(); renderHeaderCount();
+        } else {
+          backToSites();
+        }
+      } else {
+        renderSitesList();
+      }
+      return true;
+    }catch(e){ return false; }
   }
 
   function disconnectDrive(){
@@ -1416,11 +1680,13 @@
   }
 
   function updateDriveButtons(){
-    document.getElementById('driveConnectBtn').style.display = driveConnected ? 'none' : 'block';
-    document.getElementById('driveSyncNowBtn').style.display = driveConnected ? 'block' : 'none';
-    document.getElementById('driveExcelBtn').style.display = driveConnected ? 'block' : 'none';
-    document.getElementById('driveDisconnectBtn').style.display = driveConnected ? 'block' : 'none';
-    document.getElementById('driveLiveHint').style.display = driveConnected ? 'block' : 'none';
+    const setDisp = (id, disp) => { const el = document.getElementById(id); if(el) el.style.display = disp; };
+    setDisp('driveConnectBtn', driveConnected ? 'none' : 'block');
+    setDisp('driveSyncNowBtn', driveConnected ? 'block' : 'none');
+    setDisp('driveDisconnectBtn', driveConnected ? 'block' : 'none');
+    setDisp('driveLiveHint', driveConnected ? 'block' : 'none');
+    setDisp('driveExcelBtn', driveConnected ? 'block' : 'none');
+    setDisp('driveExcelHint', driveConnected ? 'none' : 'block');
     setSyncStatus(driveConnected ? 'synced' : 'local');
   }
 
@@ -1497,6 +1763,8 @@
           await kvSet(siteKey(id,'attendance'), JSON.stringify(siteData[id].attendance || {}));
           await kvSet(siteKey(id,'advances'), JSON.stringify(siteData[id].advances || []));
           await kvSet(siteKey(id,'expenses'), JSON.stringify(siteData[id].expenses || []));
+          await kvSet(siteKey(id,'contractors'), JSON.stringify(siteData[id].contractors || []));
+          await kvSet(siteKey(id,'contractorEntries'), JSON.stringify(siteData[id].contractorEntries || []));
         }
         await kvSet('lc:updated_at', remote.updatedAt);
         if(currentSiteId){
@@ -1668,19 +1936,19 @@
     const scoped = expenses.filter(x => !month || (x.date||'').startsWith(month))
       .slice().sort((a,b) => (a.date||'').localeCompare(b.date||''));
     const rows = scoped.map(x => ({
-      'Date': excelDate(x.date), 'Category': x.category || 'Other',
+      'Date': excelDate(x.date), 'Paid To': x.payee || '', 'Category': x.category || 'Other',
       'Amount (₹)': Number(x.amount) || 0, 'Note': x.note || '',
     }));
 
     if(scoped.length){
       const byCat = {};
       scoped.forEach(x => { const c = x.category || 'Other'; byCat[c] = (byCat[c]||0) + Number(x.amount||0); });
-      rows.push({ 'Date':'', 'Category':'', 'Amount (₹)':'', 'Note':'' });
+      rows.push({ 'Date':'', 'Paid To':'', 'Category':'', 'Amount (₹)':'', 'Note':'' });
       Object.keys(byCat).sort((a,b) => byCat[b] - byCat[a]).forEach(c => {
-        rows.push({ 'Date':'', 'Category': `${c} — subtotal`, 'Amount (₹)': byCat[c], 'Note':'' });
+        rows.push({ 'Date':'', 'Paid To':'', 'Category': `${c} — subtotal`, 'Amount (₹)': byCat[c], 'Note':'' });
       });
       const grand = scoped.reduce((s,x) => s + Number(x.amount||0), 0);
-      rows.push({ 'Date':'', 'Category': 'GRAND TOTAL', 'Amount (₹)': grand, 'Note':'' });
+      rows.push({ 'Date':'', 'Paid To':'', 'Category': 'GRAND TOTAL', 'Amount (₹)': grand, 'Note':'' });
     }
 
     const emptyLabel = month ? `No expenses recorded in ${month}` : 'No expenses recorded';
@@ -1855,23 +2123,9 @@
     }catch(e){ setSyncStatus('offline'); toast('Could not reach Drive — try again'); }
   }
 
-  document.getElementById('syncPill').addEventListener('click', () => switchTab('backup'));
-  document.getElementById('driveConnectBtn').addEventListener('click', connectDrive);
-  document.getElementById('driveDisconnectBtn').addEventListener('click', disconnectDrive);
-  document.getElementById('driveSyncNowBtn').addEventListener('click', async () => {
-    toast('Syncing…');
-    await pullFromDrive();
-    await pushToDrive();
-  });
+  document.getElementById('syncPill').addEventListener('click', openSettingsModal);
   document.getElementById('driveExcelBtn').addEventListener('click', pushExcelToDrive);
-  document.getElementById('saveClientIdBtn').addEventListener('click', async () => {
-    const val = document.getElementById('driveClientId').value.trim();
-    if(!val){ toast('Paste a Client ID first'); return; }
-    driveConfig.clientId = val;
-    await kvSet('lc:drive_client_id', val);
-    toast('Client ID saved — tap Connect Google Drive');
-    document.getElementById('driveSetup').open = false;
-  });
+  document.getElementById('openSettingsFromBackupBtn').addEventListener('click', openSettingsModal);
 
   // ---------- Tabs ----------
   function switchTab(tab){
@@ -1879,11 +2133,12 @@
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + tab).classList.add('active');
     document.querySelectorAll('.bottomnav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-    document.getElementById('fabBtn').style.display = (tab === 'employees' || tab === 'advances' || tab === 'expenses') ? 'flex' : 'none';
+    document.getElementById('fabBtn').style.display = (tab === 'employees' || tab === 'advances' || tab === 'expenses' || tab === 'contractors') ? 'flex' : 'none';
     if(tab === 'employees') renderEmployees();
     if(tab === 'attendance') renderAttendance();
     if(tab === 'advances') renderAdvances();
     if(tab === 'expenses') renderExpenses();
+    if(tab === 'contractors') renderContractors();
     if(tab === 'reports') renderReports();
     const headerEl = document.querySelector('#siteApp > header.topbar');
     window.scrollTo(0, 0);
@@ -1898,6 +2153,10 @@
     if(currentTab === 'employees') openEmployeeModal(null);
     else if(currentTab === 'advances') { document.getElementById('advAmount').focus(); }
     else if(currentTab === 'expenses') { document.getElementById('expAmount').focus(); }
+    else if(currentTab === 'contractors') {
+      if(currentContractorView() === 'individual') { document.getElementById('conQty').focus(); }
+      else { document.getElementById('conName').focus(); }
+    }
   });
 
   // ---------- Header count ----------
@@ -1909,11 +2168,16 @@
   function renderEmployees(){
     renderHeaderCount();
     const q = (document.getElementById('empSearch').value || '').toLowerCase().trim();
+    const sortMode = document.getElementById('empSort').value || 'name';
     const list = document.getElementById('empList');
     const today = todayISO();
     const filtered = employees.filter(e =>
       !q || e.name.toLowerCase().includes(q) || (e.phone||'').includes(q)
-    ).sort((a,b) => a.name.localeCompare(b.name));
+    ).sort((a,b) => {
+      if(sortMode === 'added') return (b.joinDate||'').localeCompare(a.joinDate||'');
+      if(sortMode === 'modified') return (b.updatedAt||'').localeCompare(a.updatedAt||'');
+      return a.name.localeCompare(b.name);
+    });
 
     if(employees.length === 0){
       list.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M4 18v-2a8 8 0 0 1 16 0v2"/><path d="M2 18h20"/><path d="M12 8V4"/><path d="M9 4h6"/></svg></div><p>No workers yet.<br>Tap <b>+</b> to add your first worker to the register.</p></div>`;
@@ -1947,6 +2211,7 @@
   }
 
   document.getElementById('empSearch').addEventListener('input', renderEmployees);
+  document.getElementById('empSort').addEventListener('change', renderEmployees);
 
   function openEmployeeModal(id){
     editingEmpId = id;
@@ -1991,12 +2256,14 @@
     if(editingEmpId){
       const emp = employees.find(e => e.id === editingEmpId);
       Object.assign(emp, data);
+      emp.updatedAt = new Date().toISOString();
       await saveEmployees();
       closeOverlay();
       renderEmployees();
       await saveAndSyncToast('Worker updated');
     } else {
       data.id = uid();
+      data.updatedAt = new Date().toISOString();
       employees.push(data);
       await saveEmployees();
       closeOverlay();
@@ -2086,9 +2353,13 @@
       <span class="chip blue">Overtime <b>${otTotal}h</b></span>
     `;
 
+    const sortMode = document.getElementById('attSort').value || 'name';
     const filtered = employees.filter(e =>
       !q || e.name.toLowerCase().includes(q) || (e.phone||'').includes(q)
-    ).sort((a,b) => a.name.localeCompare(b.name));
+    ).sort((a,b) => {
+      if(sortMode === 'modified') return (getDayEntry(date, b.id).updatedAt||'').localeCompare(getDayEntry(date, a.id).updatedAt||'');
+      return a.name.localeCompare(b.name);
+    });
 
     list.innerHTML = filtered.map(e => {
       const entry = getDayEntry(date, e.id);
@@ -2140,6 +2411,7 @@
 
   document.getElementById('attDate').addEventListener('change', renderAttendance);
   document.getElementById('attSearch').addEventListener('input', renderAttendance);
+  document.getElementById('attSort').addEventListener('change', renderAttendance);
   document.getElementById('markAllPresent').addEventListener('click', async () => {
     const date = document.getElementById('attDate').value || todayISO();
     employees.forEach(e => {
@@ -2244,7 +2516,6 @@
       .sort((a,b) => b.total - a.total);
 
     const totalLabel = month ? 'Total advances this month' : 'Total advances (all-time)';
-    labelEl.textContent = month ? 'Entries this month' : 'All entries';
 
     totalsEl.innerHTML = `
       <div class="srow"><span>${totalLabel}</span><b>₹${totalScoped.toLocaleString('en-IN')}</b></div>
@@ -2252,10 +2523,27 @@
       ${workerRows.length ? workerRows.map(r => `<div class="srow"><span>${escapeHtml(r.name)}</span><b>₹${r.total.toLocaleString('en-IN')}</b></div>`).join('') : ''}
     `;
 
-    const sorted = scoped.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
-    logEl.innerHTML = sorted.length
-      ? sorted.map(renderAdvanceEntry).join('')
-      : `<div class="empty-state"><p>No advances ${month ? 'recorded for this month' : 'recorded yet'}.</p></div>`;
+    const q = (document.getElementById('advSearch').value || '').toLowerCase().trim();
+    const withNames = scoped.map(a => ({ a, name: (employees.find(e=>e.id===a.empId)||{}).name || 'Removed worker' }));
+    let filtered = q
+      ? withNames.filter(x => x.name.toLowerCase().includes(q) || (x.a.note||'').toLowerCase().includes(q))
+      : withNames;
+
+    const sortMode = document.getElementById('advSort').value || 'date_desc';
+    filtered = filtered.slice().sort((x,y) => {
+      if(sortMode === 'date_asc') return (x.a.date||'').localeCompare(y.a.date||'');
+      if(sortMode === 'name') return x.name.localeCompare(y.name);
+      if(sortMode === 'modified') return (y.a.createdAt||'').localeCompare(x.a.createdAt||'');
+      return (y.a.date||'').localeCompare(x.a.date||'');
+    });
+
+    labelEl.textContent = q
+      ? `${filtered.length} matching ${filtered.length === 1 ? 'entry' : 'entries'}`
+      : (month ? 'Entries this month' : 'All entries');
+
+    logEl.innerHTML = filtered.length
+      ? filtered.map(x => renderAdvanceEntry(x.a)).join('')
+      : `<div class="empty-state"><p>${q ? 'No advances match that search.' : `No advances ${month ? 'recorded for this month' : 'recorded yet'}.`}</p></div>`;
     wireDeleteButtons(logEl, () => renderAdvances());
   }
 
@@ -2336,6 +2624,8 @@
     });
   });
   document.getElementById('advMonth').addEventListener('change', renderAdvances);
+  document.getElementById('advSearch').addEventListener('input', renderAdvances);
+  document.getElementById('advSort').addEventListener('change', renderAdvances);
   document.getElementById('advReportEmployee').addEventListener('change', renderAdvances);
 
   document.getElementById('addAdvanceBtn').addEventListener('click', async () => {
@@ -2345,7 +2635,7 @@
     const note = document.getElementById('advNote').value.trim();
     if(!empId){ toast('Add a worker first'); return; }
     if(!amount || amount <= 0){ toast('Enter a valid amount'); return; }
-    advances.push({ id: uid(), empId, amount, date, note });
+    advances.push({ id: uid(), empId, amount, date, note, createdAt: new Date().toISOString() });
     await saveAdvances();
     document.getElementById('advAmount').value = '';
     document.getElementById('advNote').value = '';
@@ -2355,7 +2645,7 @@
   });
 
   // ---------- Site Expenses ----------
-  const EXPENSE_CATEGORIES = ['Material','Machinery','Labour (Chowk)','Transport','Steel','Plaster','Tiles','Fabrication','Paint','Electrician','Plumber','Other'];
+  const EXPENSE_CATEGORIES = ['Material','Machinery','Labour (Chowk)','Transport','Food','Steel','Plaster','Tiles','Fabrication','Paint','Electrician','Plumber','Other'];
 
   function currentExpPeriod(){
     const active = document.querySelector('#expPeriodToggle .seg-btn.active');
@@ -2363,10 +2653,13 @@
   }
 
   function renderExpenseEntry(x){
+    const title = x.payee ? escapeHtml(x.payee) : escapeHtml(x.category || 'Other');
+    const subtitle = x.payee ? escapeHtml(x.category || 'Other') : '';
     return `
       <div class="adv-entry" data-id="${x.id}">
         <div>
-          <p class="name">${escapeHtml(x.category || 'Other')}</p>
+          <p class="name">${title}</p>
+          ${subtitle ? `<p class="note">${subtitle}</p>` : ''}
           ${x.note ? `<p class="note">${escapeHtml(x.note)}</p>` : ''}
           <p class="date">${x.date}</p>
         </div>
@@ -2409,7 +2702,7 @@
     if(!monthInput.value) monthInput.value = todayISO().slice(0,7);
     const month = period === 'month' ? monthInput.value : null;
 
-    const scoped = month ? expenses.filter(x => (x.date||'').startsWith(month)) : expenses.slice();
+    let scoped = month ? expenses.filter(x => (x.date||'').startsWith(month)) : expenses.slice();
     const totalScoped = scoped.reduce((s,x) => s + Number(x.amount||0), 0);
 
     const byCategory = {};
@@ -2420,7 +2713,6 @@
       .sort((a,b) => b.total - a.total);
 
     const totalLabel = month ? 'Total spent this month' : 'Total spent (all-time)';
-    labelEl.textContent = month ? 'Entries this month' : 'All entries';
 
     totalsEl.innerHTML = `
       <div class="srow"><span>${totalLabel}</span><b>₹${totalScoped.toLocaleString('en-IN')}</b></div>
@@ -2428,10 +2720,26 @@
       ${categoryRows.map(r => `<div class="srow"><span>${escapeHtml(r.cat)}</span><b>₹${r.total.toLocaleString('en-IN')}</b></div>`).join('')}
     `;
 
-    const sorted = scoped.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
-    logEl.innerHTML = sorted.length
-      ? sorted.map(renderExpenseEntry).join('')
-      : `<div class="empty-state"><p>No site expenses ${month ? 'recorded for this month' : 'recorded yet'}.</p></div>`;
+    const q = (document.getElementById('expSearch').value || '').trim().toLowerCase();
+    let filtered = q
+      ? scoped.filter(x => (x.payee||'').toLowerCase().includes(q) || (x.category||'').toLowerCase().includes(q) || (x.note||'').toLowerCase().includes(q))
+      : scoped;
+
+    const sortMode = document.getElementById('expSort').value || 'date_desc';
+    filtered = filtered.slice().sort((a,b) => {
+      if(sortMode === 'date_asc') return (a.date||'').localeCompare(b.date||'');
+      if(sortMode === 'name') return (a.payee||a.category||'').localeCompare(b.payee||b.category||'');
+      if(sortMode === 'modified') return (b.createdAt||'').localeCompare(a.createdAt||'');
+      return (b.date||'').localeCompare(a.date||'');
+    });
+
+    labelEl.textContent = q
+      ? `${filtered.length} matching ${filtered.length === 1 ? 'entry' : 'entries'}`
+      : (month ? 'Entries this month' : 'All entries');
+
+    logEl.innerHTML = filtered.length
+      ? filtered.map(renderExpenseEntry).join('')
+      : `<div class="empty-state"><p>${q ? 'No expenses match that search.' : `No site expenses ${month ? 'recorded for this month' : 'recorded yet'}.`}</p></div>`;
     wireExpenseDeleteButtons(logEl);
   }
 
@@ -2442,20 +2750,444 @@
       renderExpenses();
     });
   });
+  document.getElementById('expSearch').addEventListener('input', renderExpenses);
+  document.getElementById('expSort').addEventListener('change', renderExpenses);
   document.getElementById('expMonth').addEventListener('change', renderExpenses);
 
   document.getElementById('addExpenseBtn').addEventListener('click', async () => {
+    const payee = document.getElementById('expPayee').value.trim();
     const category = document.getElementById('expCategory').value || 'Other';
     const amount = Number(document.getElementById('expAmount').value);
     const date = document.getElementById('expDate').value || todayISO();
     const note = document.getElementById('expNote').value.trim();
     if(!amount || amount <= 0){ toast('Enter a valid amount'); return; }
-    expenses.push({ id: uid(), category, amount, date, note });
+    expenses.push({ id: uid(), payee, category, amount, date, note, createdAt: new Date().toISOString() });
     await saveExpenses();
+    document.getElementById('expPayee').value = '';
     document.getElementById('expAmount').value = '';
     document.getElementById('expNote').value = '';
     renderExpenses();
     await saveAndSyncToast('Expense recorded');
+  });
+
+  // ---------- Contractors ----------
+  const CONTRACTOR_CATEGORIES = ['Shuttering','Steel','Plumber','Plaster','Paint','Fabrication','Electrician','Other'];
+  const RATE_UNITS = ['Per Day','Per Bundle','Per Sq. Ft.','Per Meter','Per Piece','Other'];
+
+  function currentContractorView(){
+    const active = document.querySelector('#conViewToggle .seg-btn.active');
+    return active ? active.dataset.view : 'overall';
+  }
+  function currentConPeriod(){
+    const active = document.querySelector('#conPeriodToggle .seg-btn.active');
+    return active ? active.dataset.period : 'all';
+  }
+  function entriesForContractor(conId, month){
+    return contractorEntries.filter(x => x.contractorId === conId && (!month || (x.date||'').startsWith(month)));
+  }
+  function contractorTotals(conId, month){
+    const scoped = entriesForContractor(conId, month);
+    const workValue = scoped.reduce((s,x) => s + (Number(x.qty)||0) * (Number(x.rate)||0), 0);
+    const advanceGiven = scoped.reduce((s,x) => s + (Number(x.advance)||0), 0);
+    return { workValue, advanceGiven, net: workValue - advanceGiven, count: scoped.length };
+  }
+
+  function renderContractors(){
+    const view = currentContractorView();
+    document.getElementById('conOverall').style.display = view === 'overall' ? 'block' : 'none';
+    document.getElementById('conIndividual').style.display = view === 'individual' ? 'block' : 'none';
+    if(view === 'overall') renderContractorList();
+    else renderContractorProfile();
+  }
+
+  function renderContractorList(){
+    const list = document.getElementById('conList');
+    const q = (document.getElementById('conSearch').value || '').toLowerCase().trim();
+    const sortMode = document.getElementById('conSort').value || 'name';
+    const filtered = contractors.filter(c =>
+      !q || c.name.toLowerCase().includes(q) || (c.category||'').toLowerCase().includes(q) || (c.phone||'').includes(q)
+    ).sort((a,b) => {
+      if(sortMode === 'added') return (b.createdAt||'').localeCompare(a.createdAt||'');
+      if(sortMode === 'modified') return (b.updatedAt||'').localeCompare(a.updatedAt||'');
+      return a.name.localeCompare(b.name);
+    });
+
+    if(contractors.length === 0){
+      list.innerHTML = `<div class="empty-state"><p>No contractors yet.<br>Add one above — Steel, Plaster, Plumber, Electrician, etc.</p></div>`;
+      return;
+    }
+    if(filtered.length === 0){
+      list.innerHTML = `<div class="empty-state"><p>No contractors match "${escapeHtml(q)}".</p></div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(c => {
+      const t = contractorTotals(c.id, null);
+      const balLabel = t.net > 0 ? `Payable ₹${t.net.toLocaleString('en-IN')}` : t.net < 0 ? `Advance ahead ₹${Math.abs(t.net).toLocaleString('en-IN')}` : 'Settled';
+      return `
+        <div class="emp-card" data-id="${c.id}">
+          <div class="info">
+            <p class="name">${escapeHtml(c.name)}</p>
+            <p class="meta">${escapeHtml(c.category || 'Other')} · ${escapeHtml(c.phone || 'No phone')} · ₹${Number(c.rate)||0}/${escapeHtml(c.rateUnit || 'unit')}</p>
+          </div>
+          <div class="side">
+            <div class="adv ${t.net === 0 ? 'zero' : ''}">${balLabel}</div>
+            <div class="present-count">${t.count} ${t.count === 1 ? 'entry' : 'entries'} all-time</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    list.querySelectorAll('.emp-card').forEach(card => {
+      card.addEventListener('click', () => openContractorProfile(card.dataset.id));
+    });
+  }
+
+  function openContractorProfile(conId){
+    document.querySelectorAll('#conViewToggle .seg-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('#conViewToggle .seg-btn[data-view="individual"]').classList.add('active');
+    renderContractors();
+    const sel = document.getElementById('conSelect');
+    if(contractors.find(c => c.id === conId)) sel.value = conId;
+    renderContractorProfile();
+    document.getElementById('conIndividual').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function renderContractorCalendar(conId, month){
+    const [y, m] = month.split('-').map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const startWeekday = new Date(y, m-1, 1).getDay();
+    let cells = '';
+    for(let i=0; i<startWeekday; i++) cells += `<div class="cal-cell empty"></div>`;
+    for(let d=1; d<=daysInMonth; d++){
+      const dateStr = `${month}-${String(d).padStart(2,'0')}`;
+      const entries = contractorEntries.filter(x => x.contractorId === conId && x.date === dateStr);
+      const dayWork = entries.reduce((s,x) => s + (Number(x.qty)||0)*(Number(x.rate)||0), 0);
+      const dayAdv = entries.reduce((s,x) => s + (Number(x.advance)||0), 0);
+      let cls = 'cal-cell';
+      if(dayAdv > 0) cls += ' cal-adv-day';
+      else if(dayWork > 0) cls += ' cal-work-day';
+      let labels = '';
+      if(dayWork > 0) labels += `<span class="cal-amt cal-amt-work">₹${dayWork.toLocaleString('en-IN')}</span>`;
+      if(dayAdv > 0) labels += `<span class="cal-amt cal-amt-adv">Adv ₹${dayAdv.toLocaleString('en-IN')}</span>`;
+      cells += `<div class="${cls}"><span class="cal-day">${d}</span>${labels}</div>`;
+    }
+    return `
+      <div class="cal-grid">
+        <div class="cal-dow">S</div><div class="cal-dow">M</div><div class="cal-dow">T</div><div class="cal-dow">W</div><div class="cal-dow">T</div><div class="cal-dow">F</div><div class="cal-dow">S</div>
+        ${cells}
+      </div>
+      <div class="cal-legend">
+        <span class="leg"><i class="dot ot"></i>Blue = work done that day (value shown)</span>
+        <span class="leg"><i class="dot h"></i>Amber = advance given that day</span>
+      </div>`;
+  }
+
+  function renderConEntry(x){
+    const unit = x.unit || '';
+    const qty = Number(x.qty)||0;
+    const rate = Number(x.rate)||0;
+    const workValue = qty * rate;
+    const advance = Number(x.advance)||0;
+    const displayAmt = qty > 0 ? workValue : advance;
+    const displayLabel = qty > 0 ? 'Work value' : (advance > 0 ? 'Advance' : '');
+    return `
+      <div class="adv-entry" data-id="${x.id}">
+        <div>
+          <p class="name" style="margin:0 0 4px;">${x.date}</p>
+          ${qty > 0 ? `<p class="note">Work done: ${qty} ${escapeHtml(unit)} × ₹${rate} = ₹${workValue.toLocaleString('en-IN')}</p>` : ''}
+          ${advance > 0 ? `<p class="note">Advance given: ₹${advance.toLocaleString('en-IN')}</p>` : ''}
+          ${x.comment ? `<p class="note">${escapeHtml(x.comment)}</p>` : ''}
+        </div>
+        <div style="text-align:right;">
+          <div class="amt">₹${displayAmt.toLocaleString('en-IN')}</div>
+          ${displayLabel ? `<div class="date">${displayLabel}</div>` : ''}
+          <button class="del" data-id="${x.id}" title="Delete entry">✕</button>
+        </div>
+      </div>`;
+  }
+
+  function renderContractorProfile(){
+    const sel = document.getElementById('conSelect');
+    const profileCard = document.getElementById('conProfileCard');
+    if(contractors.length === 0){
+      sel.innerHTML = '';
+      profileCard.innerHTML = `<p style="font-size:13px;color:var(--text-muted);margin:0;">Add a contractor first.</p>`;
+      document.getElementById('conCalendar').innerHTML = '';
+      document.getElementById('conStats').innerHTML = '';
+      document.getElementById('conLog').innerHTML = '';
+      return;
+    }
+    const prevVal = sel.value;
+    sel.innerHTML = contractors.slice().sort((a,b) => a.name.localeCompare(b.name))
+      .map(c => `<option value="${c.id}">${escapeHtml(c.name)} (${escapeHtml(c.category||'Other')})</option>`).join('');
+    if(prevVal && contractors.find(c => c.id === prevVal)) sel.value = prevVal;
+    const con = contractors.find(c => c.id === sel.value) || contractors[0];
+    if(!con) return;
+
+    profileCard.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div>
+          <p class="name" style="margin:0 0 4px;font-size:16px;">${escapeHtml(con.name)}</p>
+          <p class="meta" style="margin:0;">${escapeHtml(con.category||'Other')} · ${escapeHtml(con.phone||'No phone')}</p>
+          <p class="meta" style="margin:2px 0 0;">Base rate: ₹${Number(con.rate)||0} / ${escapeHtml(con.rateUnit||'unit')}</p>
+          ${con.note ? `<p class="meta" style="margin:2px 0 0;">${escapeHtml(con.note)}</p>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="btn-outline" id="editContractorBtn" style="margin:0;padding:7px 12px;font-size:12.5px;">Edit</button>
+          <button class="btn-ghost" id="deleteContractorBtn" style="margin:0;padding:7px 12px;font-size:12.5px;color:var(--red);">Delete</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('editContractorBtn').addEventListener('click', () => openEditContractorModal(con.id));
+    document.getElementById('deleteContractorBtn').addEventListener('click', () => confirmDeleteContractor(con));
+
+    // default the entry form's unit/rate to this contractor's saved defaults
+    const unitSel = document.getElementById('conUnit');
+    if(unitSel.dataset.filledFor !== con.id){
+      unitSel.value = con.rateUnit || 'Per Day';
+      document.getElementById('conEntryRate').value = con.rate || '';
+      unitSel.dataset.filledFor = con.id;
+    }
+
+    const period = currentConPeriod();
+    const monthInput = document.getElementById('conMonth');
+    if(!monthInput.value) monthInput.value = todayISO().slice(0,7);
+    const calMonth = monthInput.value;
+    const month = period === 'month' ? calMonth : null;
+
+    document.getElementById('conCalendar').innerHTML = renderContractorCalendar(con.id, calMonth);
+
+    const t = contractorTotals(con.id, month);
+    const lifetime = contractorTotals(con.id, null);
+    document.getElementById('conStats').innerHTML = month ? `
+      <span class="chip blue">Work value this month <b>₹${t.workValue.toLocaleString('en-IN')}</b></span>
+      <span class="chip amber">Advance given this month <b>₹${t.advanceGiven.toLocaleString('en-IN')}</b></span>
+      <span class="chip grey">Entries <b>${t.count}</b></span>
+      <span class="chip ${lifetime.net >= 0 ? 'green' : 'red'}">Lifetime balance <b>₹${Math.abs(lifetime.net).toLocaleString('en-IN')} ${lifetime.net >= 0 ? 'payable' : 'ahead'}</b></span>
+    ` : `
+      <span class="chip blue">Total work value <b>₹${t.workValue.toLocaleString('en-IN')}</b></span>
+      <span class="chip amber">Total advance given <b>₹${t.advanceGiven.toLocaleString('en-IN')}</b></span>
+      <span class="chip ${t.net >= 0 ? 'green' : 'red'}">Balance <b>₹${Math.abs(t.net).toLocaleString('en-IN')} ${t.net >= 0 ? 'payable' : 'ahead'}</b></span>
+      <span class="chip grey">Entries <b>${t.count}</b></span>
+    `;
+
+    const q = (document.getElementById('conLogSearch').value || '').toLowerCase().trim();
+    let scoped = entriesForContractor(con.id, month);
+    if(q) scoped = scoped.filter(x => (x.comment||'').toLowerCase().includes(q));
+    const sortMode = document.getElementById('conLogSort').value || 'date_desc';
+    scoped = scoped.slice().sort((a,b) => {
+      if(sortMode === 'date_asc') return (a.date||'').localeCompare(b.date||'');
+      if(sortMode === 'modified') return (b.createdAt||'').localeCompare(a.createdAt||'');
+      return (b.date||'').localeCompare(a.date||'');
+    });
+
+    document.getElementById('conLogLabel').textContent = q
+      ? `${scoped.length} matching ${scoped.length === 1 ? 'entry' : 'entries'}`
+      : (month ? 'Entries this month' : 'All entries');
+
+    const logEl = document.getElementById('conLog');
+    logEl.innerHTML = scoped.length
+      ? scoped.map(renderConEntry).join('')
+      : `<div class="empty-state"><p>${q ? 'No entries match that search.' : `No work entries ${month ? 'for this month' : 'yet'}.`}</p></div>`;
+    logEl.querySelectorAll('.del').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const id = btn.dataset.id;
+        confirmPasswordAction({
+          title: 'Delete This Entry?',
+          message: 'This permanently deletes this work/advance entry. This can\'t be undone. Enter the password to confirm.',
+          confirmLabel: 'Delete Entry',
+          onConfirm: async () => {
+            contractorEntries = contractorEntries.filter(x => x.id !== id);
+            await saveContractorEntries();
+            renderContractorProfile();
+            await saveAndSyncToast('Entry deleted');
+          }
+        });
+      });
+    });
+  }
+
+  document.querySelectorAll('#conViewToggle .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#conViewToggle .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderContractors();
+    });
+  });
+  document.querySelectorAll('#conPeriodToggle .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#conPeriodToggle .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderContractorProfile();
+    });
+  });
+  document.getElementById('conSearch').addEventListener('input', renderContractorList);
+  document.getElementById('conSort').addEventListener('change', renderContractorList);
+  document.getElementById('conSelect').addEventListener('change', () => {
+    document.getElementById('conUnit').dataset.filledFor = '';
+    renderContractorProfile();
+  });
+  document.getElementById('conMonth').addEventListener('change', renderContractorProfile);
+  document.getElementById('conLogSearch').addEventListener('input', renderContractorProfile);
+  document.getElementById('conLogSort').addEventListener('change', renderContractorProfile);
+
+  document.getElementById('addContractorBtn').addEventListener('click', async () => {
+    const name = document.getElementById('conName').value.trim();
+    const phone = document.getElementById('conPhone').value.trim();
+    const category = document.getElementById('conCategory').value || 'Other';
+    const rate = Number(document.getElementById('conRate').value) || 0;
+    const rateUnit = document.getElementById('conRateUnit').value || 'Per Day';
+    const note = document.getElementById('conNote').value.trim();
+    if(!name){ toast('Enter the contractor\'s name'); return; }
+    const now = new Date().toISOString();
+    contractors.push({ id: uid(), name, phone, category, rate, rateUnit, note, createdAt: now, updatedAt: now });
+    await saveContractors();
+    document.getElementById('conName').value = '';
+    document.getElementById('conPhone').value = '';
+    document.getElementById('conRate').value = '';
+    document.getElementById('conNote').value = '';
+    renderContractorList();
+    await saveAndSyncToast('Contractor added');
+  });
+
+  function openEditContractorModal(conId){
+    const con = contractors.find(c => c.id === conId);
+    if(!con) return;
+    const modal = document.getElementById('modalContent');
+    modal.innerHTML = `
+      <button class="close" id="closeModal">✕</button>
+      <h2>Edit Contractor</h2>
+      <div class="field"><label>Name</label><input type="text" id="ec_name" value="${escapeHtml(con.name)}" /></div>
+      <div class="field"><label>Phone</label><input type="tel" id="ec_phone" value="${escapeHtml(con.phone||'')}" /></div>
+      <div class="field"><label>Category</label>
+        <select id="ec_category">
+          ${CONTRACTOR_CATEGORIES.map(c => `<option value="${c}" ${con.category===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="field" style="flex:1;"><label>Rate (₹)</label><input type="number" id="ec_rate" value="${Number(con.rate)||0}" /></div>
+        <div class="field" style="flex:1;"><label>Rate Unit</label>
+          <select id="ec_rateunit">
+            ${RATE_UNITS.map(u => `<option value="${u}" ${con.rateUnit===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Note (optional)</label><input type="text" id="ec_note" value="${escapeHtml(con.note||'')}" /></div>
+      <button class="btn-primary" id="saveContractorEditBtn" style="width:100%;">Save Changes</button>
+    `;
+    showOverlay();
+    document.getElementById('closeModal').addEventListener('click', closeOverlay);
+    document.getElementById('saveContractorEditBtn').addEventListener('click', async () => {
+      const name = document.getElementById('ec_name').value.trim();
+      if(!name){ toast('Name is required'); return; }
+      con.name = name;
+      con.phone = document.getElementById('ec_phone').value.trim();
+      con.category = document.getElementById('ec_category').value;
+      con.rate = Number(document.getElementById('ec_rate').value) || 0;
+      con.rateUnit = document.getElementById('ec_rateunit').value;
+      con.note = document.getElementById('ec_note').value.trim();
+      con.updatedAt = new Date().toISOString();
+      await saveContractors();
+      closeOverlay();
+      renderContractorProfile();
+      await saveAndSyncToast('Contractor updated');
+    });
+  }
+
+  function confirmDeleteContractor(con){
+    confirmPasswordAction({
+      title: 'Remove Contractor?',
+      message: `This permanently removes <b>${escapeHtml(con.name)}</b> and all of their work/advance entries. This can't be undone. Enter the password to confirm.`,
+      confirmLabel: 'Remove Contractor Permanently',
+      onConfirm: async () => {
+        contractors = contractors.filter(c => c.id !== con.id);
+        contractorEntries = contractorEntries.filter(x => x.contractorId !== con.id);
+        await saveContractors();
+        await saveContractorEntries();
+        document.querySelectorAll('#conViewToggle .seg-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('#conViewToggle .seg-btn[data-view="overall"]').classList.add('active');
+        renderContractors();
+        await saveAndSyncToast('Contractor and their records removed');
+      }
+    });
+  }
+
+  document.getElementById('addConEntryBtn').addEventListener('click', async () => {
+    const sel = document.getElementById('conSelect');
+    const conId = sel.value;
+    if(!conId){ toast('Add a contractor first'); return; }
+    const qty = Number(document.getElementById('conQty').value);
+    const unit = document.getElementById('conUnit').value || 'Per Day';
+    const rate = Number(document.getElementById('conEntryRate').value) || 0;
+    const advance = Number(document.getElementById('conAdvance').value) || 0;
+    const date = document.getElementById('conDate').value || todayISO();
+    const comment = document.getElementById('conComment').value.trim();
+    if((!qty || qty <= 0) && !advance){ toast('Enter work done or an advance amount'); return; }
+    contractorEntries.push({ id: uid(), contractorId: conId, date, qty: qty||0, unit, rate, advance, comment, createdAt: new Date().toISOString() });
+    await saveContractorEntries();
+    document.getElementById('conQty').value = '';
+    document.getElementById('conAdvance').value = '';
+    document.getElementById('conComment').value = '';
+    renderContractorProfile();
+    await saveAndSyncToast('Entry recorded');
+  });
+
+  function buildContractorsSheet(){
+    const rows = contractors.slice().sort((a,b) => a.name.localeCompare(b.name)).map(c => {
+      const t = contractorTotals(c.id, null);
+      return {
+        'Name': c.name, 'Category': c.category || 'Other', 'Phone': c.phone || '',
+        'Rate (₹)': Number(c.rate)||0, 'Rate Unit': c.rateUnit || '',
+        'Total Work Value (₹)': t.workValue, 'Total Advance Given (₹)': t.advanceGiven,
+        'Balance (₹, +payable / -ahead)': t.net, 'Note': c.note || '',
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ 'Name': 'No contractors added yet' }]);
+    autoFitColumns(ws);
+    return ws;
+  }
+
+  function buildContractorEntriesSheet(conId, month){
+    const con = contractors.find(c => c.id === conId);
+    const scoped = entriesForContractor(conId, month).slice().sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    const rows = scoped.map(x => ({
+      'Date': excelDate(x.date), 'Quantity': Number(x.qty)||0, 'Unit': x.unit || '',
+      'Rate (₹)': Number(x.rate)||0, 'Work Value (₹)': (Number(x.qty)||0)*(Number(x.rate)||0),
+      'Advance Given (₹)': Number(x.advance)||0, 'Comment': x.comment || '',
+    }));
+    if(scoped.length){
+      const t = contractorTotals(conId, month);
+      rows.push({ 'Date':'', 'Quantity':'', 'Unit':'', 'Rate (₹)':'', 'Work Value (₹)':'', 'Advance Given (₹)':'', 'Comment':'' });
+      rows.push({ 'Date':'', 'Quantity':'', 'Unit':'', 'Rate (₹)':'', 'Work Value (₹)': t.workValue, 'Advance Given (₹)': t.advanceGiven, 'Comment': 'TOTALS' });
+      rows.push({ 'Date':'', 'Quantity':'', 'Unit':'', 'Rate (₹)':'', 'Work Value (₹)':'', 'Advance Given (₹)':'', 'Comment': `Balance: ₹${Math.abs(t.net).toLocaleString('en-IN')} ${t.net>=0?'payable to contractor':'paid ahead of work'}` });
+    }
+    const emptyLabel = month ? `No entries recorded in ${month}` : 'No entries recorded';
+    const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ 'Date': emptyLabel }]);
+    formatDateColumnsByHeader(ws, ['Date']);
+    autoFitColumns(ws);
+    return { ws, name: con ? con.name : 'Contractor' };
+  }
+
+  document.getElementById('conDownloadAllBtn').addEventListener('click', () => {
+    const con = contractors.find(c => c.id === document.getElementById('conSelect').value);
+    if(!con){ toast('Add a contractor first'); return; }
+    const { ws } = buildContractorEntriesSheet(con.id, null);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Work Log');
+    XLSX.writeFile(wb, `Lakhan_Contractor_${con.name.replace(/[^a-z0-9]+/gi,'_')}_AllTime.xlsx`);
+    toast('Contractor file downloaded');
+  });
+  document.getElementById('conDownloadMonthBtn').addEventListener('click', () => {
+    const con = contractors.find(c => c.id === document.getElementById('conSelect').value);
+    if(!con){ toast('Add a contractor first'); return; }
+    const month = document.getElementById('conDownloadMonth').value;
+    if(!month){ toast('Pick a month first'); return; }
+    const { ws } = buildContractorEntriesSheet(con.id, month);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `Work Log ${month}`);
+    XLSX.writeFile(wb, `Lakhan_Contractor_${con.name.replace(/[^a-z0-9]+/gi,'_')}_${month}.xlsx`);
+    toast('Contractor file downloaded');
   });
 
   // ---------- Reports ----------
@@ -2656,6 +3388,14 @@
     toast('Salary file downloaded');
   });
 
+  document.getElementById('exportContractorsBtn').addEventListener('click', () => {
+    if(contractors.length === 0){ toast('Add contractors before exporting'); return; }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, buildContractorsSheet(), 'Contractors');
+    XLSX.writeFile(wb, `Lakhan_Contractors_Summary.xlsx`);
+    toast('Contractors file downloaded');
+  });
+
   document.getElementById('downloadIndivBtn').addEventListener('click', () => {
     const sel = document.getElementById('reportEmployee');
     const emp = employees.find(e => e.id === sel.value);
@@ -2689,7 +3429,44 @@
     const modal = document.getElementById('modalContent');
     modal.innerHTML = `
       <button class="close" id="closeModal">✕</button>
-      <h2>Appearance</h2>
+      <h2>Settings</h2>
+
+      <div class="eyebrow" style="margin-top:0;">Google Drive sync</div>
+      <div class="card-block" id="driveCard">
+        <div class="status-row">
+          <span class="status-dot" id="driveDot"></span>
+          <div>
+            <div class="status-text" id="driveStatusText">Not connected</div>
+            <div class="status-sub" id="driveStatusSub">Turn this on to sync automatically across phones/computers</div>
+          </div>
+        </div>
+        <button class="btn-primary" id="driveConnectBtn">Connect Google Drive</button>
+        <button class="btn-outline" id="driveSyncNowBtn" style="display:none;">Sync now</button>
+        <button class="btn-ghost" id="driveDisconnectBtn" style="display:none;width:100%;margin-top:9px;">Disconnect</button>
+        <p class="field-hint" id="driveLiveHint" style="display:none;margin-top:10px;">Changes push to Drive within a second, and other devices pick them up automatically — usually within a few seconds, or instantly when you switch back into the app. This covers every site, from any device.</p>
+
+        <details class="adv-setup" id="driveSetup">
+          <summary>Need to set this up? (one-time, ~10 min)</summary>
+          <div class="steps">
+            <ol style="margin:0;padding-left:16px;">
+              <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a> and create a free project.</li>
+              <li>Open <b>APIs & Services → Library</b>, search <b>Google Drive API</b>, click <b>Enable</b>.</li>
+              <li>Go to <b>APIs & Services → OAuth consent screen</b>, choose <b>External</b>, fill the basic app info, and add your own Google account under <b>Test users</b>.</li>
+              <li>Go to <b>Credentials → Create Credentials → OAuth client ID</b>, type <b>Web application</b>.</li>
+              <li>Under <b>Authorized JavaScript origins</b>, add the exact web address this site is hosted at (e.g. <code>https://yoursite.com</code>).</li>
+              <li>Copy the <b>Client ID</b> it gives you and paste it below.</li>
+            </ol>
+            <div class="field" style="margin-top:10px;">
+              <label>Google Client ID</label>
+              <input type="text" id="driveClientId" placeholder="xxxxxxxx.apps.googleusercontent.com" value="${escapeHtml(driveConfig.clientId || '')}" />
+              <div class="field-hint">Saved on this device only. You only need to do this once per hosting domain.</div>
+            </div>
+            <button class="btn-secondary" id="saveClientIdBtn" style="margin-top:2px;">Save Client ID</button>
+          </div>
+        </details>
+      </div>
+
+      <div class="eyebrow">Appearance</div>
       <div class="field">
         <label>Mode</label>
         <div class="seg-toggle" id="themeToggle">
@@ -2709,6 +3486,24 @@
     `;
     showOverlay();
     document.getElementById('closeModal').addEventListener('click', closeOverlay);
+
+    updateDriveButtons();
+    document.getElementById('driveConnectBtn').addEventListener('click', connectDrive);
+    document.getElementById('driveDisconnectBtn').addEventListener('click', disconnectDrive);
+    document.getElementById('driveSyncNowBtn').addEventListener('click', async () => {
+      toast('Syncing…');
+      await pullFromDrive();
+      await pushToDrive();
+    });
+    document.getElementById('saveClientIdBtn').addEventListener('click', async () => {
+      const val = document.getElementById('driveClientId').value.trim();
+      if(!val){ toast('Paste a Client ID first'); return; }
+      driveConfig.clientId = val;
+      await kvSet('lc:drive_client_id', val);
+      toast('Client ID saved — tap Connect Google Drive');
+      document.getElementById('driveSetup').open = false;
+    });
+
     document.querySelectorAll('#themeToggle .seg-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         currentTheme = btn.dataset.theme;
@@ -2832,8 +3627,41 @@
   });
 
   if('serviceWorker' in navigator){
+    let swReg = null;
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => { /* e.g. opened via file:// — safe to ignore */ });
+      navigator.serviceWorker.register('./sw.js').then((reg) => {
+        swReg = reg;
+        // Check for a newer sw.js right away, and periodically while the app
+        // stays open, instead of waiting for the browser's own (slow) check.
+        reg.update().catch(() => {});
+        setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if(!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+              // A new version is installed and waiting — activate it now
+              // rather than waiting for every tab to close first.
+              newWorker.postMessage('SKIP_WAITING');
+            }
+          });
+        });
+      }).catch(() => { /* e.g. opened via file:// — safe to ignore */ });
+
+      // Once the new worker takes control, reload once so the page picks up
+      // the fresh HTML/JS automatically — no uninstall/reinstall needed.
+      let refreshedOnce = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if(refreshedOnce) return;
+        refreshedOnce = true;
+        window.location.reload();
+      });
+    });
+
+    // Also check for an update the moment the app is reopened/foregrounded.
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible' && swReg) swReg.update().catch(() => {});
     });
   }
 
@@ -2851,7 +3679,6 @@
     document.getElementById('expMonth').value = todayISO().slice(0,7);
     document.getElementById('exportMonth').value = todayISO().slice(0,7);
     updateExportMonthVisibility();
-    document.getElementById('driveClientId').value = driveConfig.clientId || '';
     renderSitesList();
 
     const wasConnected = await kvGet('lc:drive_connected');
@@ -2861,7 +3688,7 @@
       // Try a silent-ish reconnect; if it fails the user just taps Connect again.
       const ok = await ensureToken();
       if(ok){ await pullFromDrive(); await pushToDrive(); }
-      else{ setSyncStatus('local', 'Tap Backup to reconnect Drive'); }
+      else{ setSyncStatus('local', 'Tap Settings (⚙) to reconnect Drive'); }
     } else {
       updateDriveButtons();
     }
