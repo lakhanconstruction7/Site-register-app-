@@ -1,4 +1,4 @@
-const CACHE = 'lakhan-register-v11';
+const CACHE = 'lakhan-register-v14';
 const SHELL = [
   './',
   './index.html',

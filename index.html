@@ -22,9 +22,9 @@
   :root{
     --ink:#17181C;
     --ink-2:#2A2C32;
-    --accent:#FF6A1A;
-    --accent-dark:#D9540E;
-    --accent-soft:#FFE7D6;
+    --accent:#E2672E;
+    --accent-dark:#B24F1F;
+    --accent-soft:#FBE6D8;
     --bg:#F5F4F0;
     --paper:#FFFFFF;
     --green:#1D9A5B;
@@ -42,6 +42,10 @@
     --font-display:'Space Grotesk', sans-serif;
     --font-body:'Inter', system-ui, sans-serif;
     --font-mono:'JetBrains Mono', monospace;
+    --app-max-w:480px;
+    --surface-dark:#17181C;
+    --surface-dark-2:#2A2C32;
+    --accent-text:var(--accent-dark);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -55,21 +59,25 @@
   input,select,textarea{ font-family:inherit; }
 
   #app{
-    max-width:480px;
+    max-width:var(--app-max-w);
     margin:0 auto;
     min-height:100vh;
     background:var(--bg);
     position:relative;
+    transition:max-width .2s ease;
   }
   @media (min-width:640px){
+    :root{ --app-max-w:600px; }
     body{ background:var(--line); }
-    #app{ max-width:600px; box-shadow:0 0 0 1px var(--line), 0 8px 40px rgba(23,24,28,0.12); }
+    #app{ box-shadow:0 0 0 1px var(--line), 0 8px 40px rgba(23,24,28,0.12); }
+    main{ padding:22px 20px 116px; }
+    header.topbar{ padding:22px 20px 18px; }
   }
   @media (min-width:900px){
-    #app{ max-width:760px; }
+    :root{ --app-max-w:760px; }
   }
   @media (min-width:1280px){
-    #app{ max-width:900px; }
+    :root{ --app-max-w:900px; }
   }
   @media (min-width:640px){
     [data-theme="dark"] body{ background:#161616; }
@@ -82,15 +90,21 @@
     background:var(--paper); border-radius:16px; padding:16px 18px; margin-bottom:12px;
     display:flex; align-items:center; justify-content:space-between; gap:10px;
     border:1px solid var(--line); box-shadow:0 1px 3px rgba(23,24,28,0.05); cursor:pointer;
+    transition:transform .1s ease, border-color .15s ease, box-shadow .15s ease;
   }
   .site-card:active{ transform:scale(0.985); }
+  @media (hover:hover){
+    .site-card:hover{ border-color:var(--accent); box-shadow:0 4px 12px -4px rgba(23,24,28,0.12); }
+  }
   .site-card .site-info .name{ font-weight:700; font-size:16px; margin:0 0 3px; font-family:var(--font-display); }
   .site-card .site-info .meta{ font-size:12px; color:var(--text-muted); margin:0; }
   .site-card .chevron svg{ width:18px; height:18px; }
 
   /* Header */
   header.topbar{
-    background:var(--ink);
+    background:
+      radial-gradient(130% 200% at 12% -30%, rgba(226,103,46,0.28), transparent 55%),
+      var(--surface-dark);
     color:#fff;
     padding:18px 18px 16px;
     position:sticky; top:0; z-index:30;
@@ -160,6 +174,30 @@
     color:var(--text-muted); outline:none;
   }
 
+  /* Dashboard */
+  .dash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px; }
+  .dash-card{
+    background:var(--paper); border-radius:16px; padding:14px 16px;
+    box-shadow:0 1px 3px rgba(23,24,28,0.05);
+  }
+  .dash-card .lbl{ font-size:11.5px; color:var(--text-muted); font-weight:600; margin:0 0 6px; line-height:1.3; }
+  .dash-card .val{ font-family:var(--font-mono); font-size:19px; font-weight:700; color:var(--text); margin:0; }
+  .dash-card .val.accent{ color:var(--accent-dark); }
+  .dash-card .val.green{ color:var(--green); }
+  .dash-card .val.red{ color:var(--red); }
+  .dash-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .dash-action-btn{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    background:var(--paper); border:1px solid var(--line); border-radius:16px;
+    padding:16px 10px; font-family:var(--font-display); font-weight:600; font-size:12.5px; color:var(--text);
+    cursor:pointer;
+  }
+  .dash-action-btn .icon{ color:var(--accent); }
+  .dash-action-btn .icon svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  @media (hover:hover){
+    .dash-action-btn:hover{ border-color:var(--accent); }
+  }
+
   /* Employee card */
   .emp-card{
     background:var(--paper);
@@ -171,9 +209,12 @@
     cursor:pointer;
     border:1px solid var(--line);
     position:relative;
-    transition:transform .1s ease;
+    transition:transform .1s ease, border-color .15s ease, box-shadow .15s ease;
   }
   .emp-card:active{ transform:scale(0.985); }
+  @media (hover:hover){
+    .emp-card:hover{ border-color:var(--accent); box-shadow:0 4px 12px -4px rgba(23,24,28,0.12); }
+  }
   .emp-card::before{
     content:''; position:absolute; left:0; top:14px; bottom:14px; width:4px; border-radius:0 3px 3px 0;
     background:var(--grey-mid);
@@ -197,25 +238,41 @@
 
   /* FAB */
   .fab{
-    position:fixed; right:calc(50% - 240px + 18px); bottom:98px; z-index:40;
+    position:fixed;
+    right:max(18px, calc((100vw - min(100vw, var(--app-max-w))) / 2 + 18px));
+    bottom:calc(98px + env(safe-area-inset-bottom));
+    z-index:40;
     width:58px; height:58px; border-radius:18px;
-    background:var(--accent); color:#fff; border:none;
+    background:linear-gradient(155deg, var(--accent), var(--accent-dark));
+    color:#fff; border:none;
     font-size:28px; font-weight:600; line-height:1;
-    box-shadow:0 10px 22px -6px rgba(217,84,14,0.55);
+    box-shadow:0 10px 22px -6px rgba(178,79,31,0.55);
     display:flex; align-items:center; justify-content:center;
     cursor:pointer;
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease, right .2s ease;
   }
-  @media (max-width:516px){
-    .fab{ right:18px; }
+  .fab::after{
+    content:''; position:absolute; inset:-6px; border-radius:22px;
+    border:2px solid var(--accent); opacity:0; animation:fabPulse 2.6s ease-out infinite;
+    pointer-events:none;
   }
-  .fab:active{ transform:scale(0.92); }
+  @keyframes fabPulse{
+    0%{ opacity:0.45; transform:scale(0.9); }
+    70%{ opacity:0; transform:scale(1.18); }
+    100%{ opacity:0; transform:scale(1.18); }
+  }
+  .fab:active{ transform:scale(0.9) rotate(-4deg); box-shadow:0 6px 14px -6px rgba(178,79,31,0.55); }
+  @media (hover:hover){
+    .fab:hover{ transform:translateY(-2px); box-shadow:0 14px 26px -6px rgba(178,79,31,0.6); }
+  }
 
   /* Bottom nav */
   nav.bottomnav{
     position:sticky; bottom:0; z-index:30;
-    background:var(--ink);
+    background:var(--surface-dark);
     padding-bottom:env(safe-area-inset-bottom);
     border-radius:20px 20px 0 0;
+    box-shadow:0 -6px 20px -8px rgba(0,0,0,0.25);
   }
   nav.bottomnav .tabs{
     display:flex;
@@ -226,16 +283,40 @@
   nav.bottomnav button{
     flex:0 0 auto; min-width:62px;
     background:none; border:none; color:#84828A;
-    padding:13px 8px 12px; cursor:pointer;
-    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:11px 8px 10px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    -webkit-tap-highlight-color:transparent;
   }
-  nav.bottomnav button .ic{ font-size:19px; line-height:1; }
+  @media (max-width:600px){
+    /* With 7+ tabs, icon+label never fits a phone width without scrolling,
+       which looked broken. Below this width, drop the scroll entirely and
+       go icon-only so every tab is always visible and evenly spaced. */
+    nav.bottomnav .tabs{ overflow-x:visible; }
+    nav.bottomnav button{ flex:1 1 0; min-width:0; padding:12px 2px 10px; }
+    nav.bottomnav button .lb{ display:none; }
+  }
+  nav.bottomnav button .ic{
+    font-size:19px; line-height:1;
+    width:32px; height:26px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:11px;
+    transition:background-color .22s ease, transform .28s cubic-bezier(.34,1.56,.64,1);
+  }
   nav.bottomnav button .lb{
     font-family:var(--font-display); font-weight:600; font-size:10.5px;
-    letter-spacing:0.3px;
+    letter-spacing:0.2px;
+    transition:color .18s ease;
+    white-space:nowrap;
   }
   nav.bottomnav button.active{ color:var(--accent); }
-  nav.bottomnav button.active .ic{ transform:translateY(-1px); }
+  nav.bottomnav button.active .ic{
+    background:var(--accent-soft);
+    transform:translateY(-3px) scale(1.04);
+  }
+  [data-theme="dark"] nav.bottomnav button.active .ic{ background:rgba(226,103,46,0.18); }
+  nav.bottomnav button:active .ic{ transform:translateY(-1px) scale(0.88); }
+  nav.bottomnav button .ic .icon svg{ transition:stroke-width .18s ease; }
+  nav.bottomnav button.active .ic .icon svg{ stroke-width:2.1; }
 
   /* Attendance */
   .date-row{
@@ -246,7 +327,7 @@
     background:var(--paper); font-size:14.5px; color:var(--text);
   }
   .quick-btn{
-    background:var(--ink); color:#fff; border:none; border-radius:12px;
+    background:var(--surface-dark); color:#fff; border:none; border-radius:12px;
     padding:11px 13px; font-family:var(--font-display); font-weight:600;
     font-size:12.5px; letter-spacing:0.2px; cursor:pointer;
     white-space:nowrap;
@@ -290,7 +371,7 @@
   .report-row .name{ font-weight:600; font-size:15px; margin:0 0 3px; }
   .report-row .meta{ font-size:11.5px; color:var(--text-muted); margin:0; font-family:var(--font-mono); }
   .report-row .side{ text-align:right; flex-shrink:0; }
-  .report-row .netval{ font-family:var(--font-mono); font-weight:700; font-size:14.5px; color:var(--accent-dark); }
+  .report-row .netval{ font-family:var(--font-mono); font-weight:700; font-size:14.5px; color:var(--accent-text); }
   .report-row .netlbl{ font-size:10.5px; color:var(--text-muted); margin-top:2px; }
 
   .seg-toggle{
@@ -300,19 +381,21 @@
   .seg-btn{
     flex:1; border:none; background:transparent; padding:9px; border-radius:10px;
     font-family:var(--font-display); font-weight:600; font-size:13px; color:var(--text-muted); cursor:pointer;
+    transition:background-color .2s ease, color .2s ease, transform .15s ease;
   }
-  .seg-btn.active{ background:var(--ink); color:#fff; }
+  .seg-btn.active{ background:var(--surface-dark); color:#fff; }
+  .seg-btn:active{ transform:scale(0.96); }
   .stamp{
     width:38px; height:38px; border-radius:12px;
     border:1.5px solid var(--line); background:var(--paper);
     color:var(--text-muted); font-family:var(--font-display); font-weight:700; font-size:14px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
-    transition:transform .12s ease;
+    transition:transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease, background-color .15s ease, border-color .15s ease;
   }
-  .stamp.P.on{ background:var(--green); border-color:var(--green); color:#fff; transform:scale(1.08); box-shadow:0 3px 8px rgba(29,154,91,0.35); }
-  .stamp.A.on{ background:var(--red); border-color:var(--red); color:#fff; transform:scale(1.08); box-shadow:0 3px 8px rgba(225,75,75,0.35); }
-  .stamp.H.on{ background:var(--amber); border-color:var(--amber); color:#fff; transform:scale(1.08); box-shadow:0 3px 8px rgba(232,163,23,0.35); }
-  .stamp:active{ transform:scale(0.92); }
+  .stamp.P.on{ background:var(--green); border-color:var(--green); color:#fff; transform:scale(1.1); box-shadow:0 3px 10px rgba(29,154,91,0.4); }
+  .stamp.A.on{ background:var(--red); border-color:var(--red); color:#fff; transform:scale(1.1); box-shadow:0 3px 10px rgba(225,75,75,0.4); }
+  .stamp.H.on{ background:var(--amber); border-color:var(--amber); color:#fff; transform:scale(1.1); box-shadow:0 3px 10px rgba(232,163,23,0.4); }
+  .stamp:active{ transform:scale(0.88); }
 
   /* Cards / blocks */
   .card-block{
@@ -333,34 +416,59 @@
   .field-hint{ font-size:11.5px; color:var(--text-muted); margin-top:5px; line-height:1.4; }
 
   .btn-primary{
-    width:100%; background:var(--accent); color:#fff; border:none;
+    width:100%; background:linear-gradient(155deg, var(--accent), var(--accent-dark)); color:#fff; border:none;
     padding:13px; border-radius:13px; font-family:var(--font-display); font-weight:600;
     font-size:15px; letter-spacing:0.1px; cursor:pointer;
+    box-shadow:0 6px 16px -6px rgba(178,79,31,0.45);
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease, filter .15s ease;
   }
-  .btn-primary:active{ transform:scale(0.98); }
+  .btn-primary:active{ transform:scale(0.98); box-shadow:0 3px 8px -4px rgba(178,79,31,0.45); }
+  @media (hover:hover){
+    .btn-primary:hover{ filter:brightness(1.05); box-shadow:0 8px 20px -6px rgba(178,79,31,0.55); }
+  }
   .btn-secondary{
-    width:100%; background:var(--ink); color:#fff; border:none;
+    width:100%; background:linear-gradient(155deg, var(--surface-dark-2), var(--surface-dark)); color:#fff; border:none;
     padding:13px; border-radius:13px; font-family:var(--font-display); font-weight:600;
     font-size:14px; cursor:pointer; margin-top:9px;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), filter .15s ease;
+  }
+  .btn-secondary:active{ transform:scale(0.98); }
+  @media (hover:hover){
+    .btn-secondary:hover{ filter:brightness(1.15); }
   }
   .btn-outline{
     width:100%; background:transparent; color:var(--text); border:1.5px solid var(--line);
     padding:12px; border-radius:13px; font-family:var(--font-display); font-weight:600;
     font-size:14px; cursor:pointer; margin-top:9px;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), border-color .15s ease, background-color .15s ease;
+  }
+  .btn-outline:active{ transform:scale(0.98); }
+  @media (hover:hover){
+    .btn-outline:hover{ border-color:var(--accent); background:var(--accent-soft); }
   }
   .btn-danger{
     background:var(--red); color:#fff; border:none; border-radius:10px;
     padding:9px 13px; font-size:12.5px; font-weight:700; cursor:pointer;
+    transition:transform .15s ease, filter .15s ease;
+  }
+  .btn-danger:active{ transform:scale(0.96); }
+  @media (hover:hover){
+    .btn-danger:hover{ filter:brightness(1.08); }
   }
   .btn-ghost{
     background:transparent; color:var(--text-muted); border:1px solid var(--line);
     border-radius:10px; padding:9px 13px; font-size:12.5px; font-weight:600; cursor:pointer;
+    transition:transform .15s ease, background-color .15s ease;
+  }
+  .btn-ghost:active{ transform:scale(0.96); }
+  @media (hover:hover){
+    .btn-ghost:hover{ background:var(--line); }
   }
 
   /* Login screen */
   .login-wrap{
     min-height:100vh; display:flex; align-items:center; justify-content:center;
-    padding:24px; background:var(--ink);
+    padding:24px; background:var(--surface-dark);
   }
   .login-card{
     background:var(--paper); border-radius:22px; padding:32px 26px 28px;
@@ -405,7 +513,7 @@
   .install-banner.show{ display:flex; }
   .install-banner .ib-icon{
     width:40px; height:40px; border-radius:11px; flex-shrink:0;
-    background:var(--ink); display:flex; align-items:center; justify-content:center;
+    background:var(--surface-dark); display:flex; align-items:center; justify-content:center;
   }
   .install-banner .ib-icon img{ width:24px; height:24px; }
   .install-banner .ib-text{ flex:1; min-width:0; }
@@ -438,7 +546,7 @@
 
   /* Backup tab */
   .hero-block{
-    background:var(--ink); border-radius:18px; padding:22px 18px; margin-bottom:16px; color:#fff;
+    background:var(--surface-dark); border-radius:18px; padding:22px 18px; margin-bottom:16px; color:#fff;
     position:relative; overflow:hidden;
   }
   .hero-block .big{ font-family:var(--font-display); font-weight:700; font-size:19px; margin:0 0 6px; }
@@ -453,7 +561,7 @@
 
   details.adv-setup{ margin-top:10px; }
   details.adv-setup summary{
-    font-size:12.5px; font-weight:600; color:var(--accent-dark); cursor:pointer; list-style:none;
+    font-size:12.5px; font-weight:600; color:var(--accent-text); cursor:pointer; list-style:none;
   }
   details.adv-setup summary::-webkit-details-marker{ display:none; }
   details.adv-setup .steps{
@@ -472,7 +580,7 @@
   }
   .overlay.show{ opacity:1; pointer-events:auto; }
   .modal{
-    background:var(--bg); width:100%; max-width:480px; border-radius:22px 22px 0 0;
+    background:var(--bg); width:100%; max-width:var(--app-max-w); border-radius:22px 22px 0 0;
     padding:20px 18px calc(18px + env(safe-area-inset-bottom));
     max-height:88vh; overflow-y:auto;
     transform:translateY(16px); transition:transform .18s ease;
@@ -490,11 +598,12 @@
 
   /* Toast */
   #toast{
-    position:fixed; left:50%; bottom:104px; transform:translateX(-50%) translateY(20px);
-    background:var(--ink); color:#fff; padding:11px 20px; border-radius:30px;
+    position:fixed; left:50%; bottom:calc(104px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px);
+    background:var(--surface-dark); color:#fff; padding:11px 20px; border-radius:30px;
     font-size:13px; font-weight:600; z-index:200; opacity:0; pointer-events:none;
     transition:opacity .2s ease, transform .2s ease;
     max-width:80%; text-align:center;
+    box-shadow:0 8px 20px -6px rgba(0,0,0,0.35);
   }
   #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
@@ -508,7 +617,11 @@
     --line:#2B2C31;
     --grey-mid:#54565D;
   }
-  [data-theme="dark"] header.topbar{ background:#000; }
+  [data-theme="dark"] header.topbar{
+    background:
+      radial-gradient(130% 200% at 12% -30%, rgba(226,103,46,0.22), transparent 55%),
+      #000;
+  }
   [data-theme="dark"] nav.bottomnav{ background:#000; }
   [data-theme="dark"] .field input,
   [data-theme="dark"] .field select,
@@ -526,15 +639,32 @@
   [data-theme="dark"] .emp-card, [data-theme="dark"] .att-row, [data-theme="dark"] .adv-entry,
   [data-theme="dark"] .card-block, [data-theme="dark"] .report-row{ box-shadow:none; }
 
-  [data-accent="orange"]{ --accent:#FF6A1A; --accent-dark:#D9540E; --accent-soft:#FFE7D6; }
-  [data-accent="blue"]{ --accent:#3B7DDB; --accent-dark:#2A5FB0; --accent-soft:#DCE9FB; }
-  [data-accent="green"]{ --accent:#1D9A5B; --accent-dark:#157A47; --accent-soft:#DAF3E6; }
-  [data-accent="maroon"]{ --accent:#B23A48; --accent-dark:#8C2C38; --accent-soft:#F6DEE1; }
+  [data-accent="orange"]{ --accent:#E2672E; --accent-dark:#B24F1F; --accent-soft:#FBE6D8; --accent-text:var(--accent-dark); }
+  [data-accent="blue"]{ --accent:#3B7DDB; --accent-dark:#2A5FB0; --accent-soft:#DCE9FB; --accent-text:var(--accent-dark); }
+  [data-accent="green"]{ --accent:#1D9A5B; --accent-dark:#157A47; --accent-soft:#DAF3E6; --accent-text:var(--accent-dark); }
+  [data-accent="maroon"]{ --accent:#B23A48; --accent-dark:#8C2C38; --accent-soft:#F6DEE1; --accent-text:var(--accent-dark); }
+  /* accent-dark reads muddy as plain text on the very dark backgrounds below,
+     so dark mode gets its own brighter tint per theme just for text — the
+     accent/accent-dark values themselves (used in button gradients etc.)
+     are untouched. */
+  [data-theme="dark"][data-accent="orange"]{ --accent-text:#EE9165; }
+  [data-theme="dark"][data-accent="blue"]{ --accent-text:#82B4F6; }
+  [data-theme="dark"][data-accent="green"]{ --accent-text:#4FD494; }
+  [data-theme="dark"][data-accent="maroon"]{ --accent-text:#F1889A; }
 
   .icon-btn{
     width:34px; height:34px; border-radius:11px; background:rgba(255,255,255,0.09);
     border:1px solid rgba(255,255,255,0.1); color:#fff; display:flex; align-items:center; justify-content:center;
     cursor:pointer; flex-shrink:0;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), background-color .15s ease;
+  }
+  .icon-btn.on-light{
+    background:var(--bg); border-color:var(--line); color:var(--text);
+  }
+  .icon-btn:active{ transform:scale(0.88); }
+  @media (hover:hover){
+    .icon-btn:hover{ background:rgba(255,255,255,0.16); }
+    .icon-btn.on-light:hover{ background:var(--line); }
   }
   .icon-btn svg{ width:17px; height:17px; }
   .icon-btn.spinning svg{ animation: spin 0.8s linear infinite; }
@@ -543,15 +673,16 @@
   .icon svg{ width:1em; height:1em; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; display:block; }
 
   .search .icon svg{ width:17px; height:17px; stroke:var(--text-muted); }
-  nav.bottomnav button .ic .icon svg{ width:21px; height:21px; }
+  nav.bottomnav button .ic .icon svg{ width:clamp(18px, 5vw, 21px); height:clamp(18px, 5vw, 21px); }
   .empty-state .icon svg{ width:40px; height:40px; stroke:var(--text-muted); stroke-width:1.4; margin-bottom:10px; }
   .empty-state .icon{ justify-content:center; width:100%; }
   .hero-block .icon svg{ width:22px; height:22px; stroke:var(--accent); }
 
   .swatch-row{ display:flex; gap:13px; margin-top:4px; }
-  .swatch{ width:38px; height:38px; border-radius:50%; border:3px solid transparent; cursor:pointer; padding:0; }
-  .swatch.on{ border-color:var(--ink); }
-  .sw-orange{ background:#FF6A1A; }
+  .swatch{ width:38px; height:38px; border-radius:50%; border:3px solid transparent; cursor:pointer; padding:0; transition:transform .2s cubic-bezier(.34,1.56,.64,1), border-color .2s ease, box-shadow .2s ease; }
+  .swatch:active{ transform:scale(0.88); }
+  .swatch.on{ transform:scale(1.12); box-shadow:0 4px 10px -2px rgba(0,0,0,0.3); border-color:var(--ink); }
+  .sw-orange{ background:#E2672E; }
   .sw-blue{ background:#3B7DDB; }
   .sw-green{ background:#1D9A5B; }
   .sw-maroon{ background:#B23A48; }
@@ -665,8 +796,25 @@
 
   <main>
 
+    <!-- DASHBOARD -->
+    <section class="panel active" id="panel-dashboard">
+      <div class="eyebrow" style="margin-top:0;">Today at a glance</div>
+      <div class="dash-grid" id="dashToday"></div>
+
+      <div class="eyebrow">This month</div>
+      <div class="dash-grid" id="dashMonth"></div>
+
+      <div class="eyebrow">Quick actions</div>
+      <div class="dash-actions">
+        <button class="dash-action-btn" data-goto="attendance"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="m9 16 2 2 4-4"/></svg></span>Mark Attendance</button>
+        <button class="dash-action-btn" data-goto="advances"><span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></span>Add Advance</button>
+        <button class="dash-action-btn" data-goto="expenses"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.8a3.3 3.3 0 0 0 0 6.6h4.4a3.3 3.3 0 0 1 0 6.6H6.5"/></svg></span>Add Expense</button>
+        <button class="dash-action-btn" data-goto="contractors"><span class="icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3"/></svg></span>Contractors</button>
+      </div>
+    </section>
+
     <!-- EMPLOYEES -->
-    <section class="panel active" id="panel-employees">
+    <section class="panel" id="panel-employees">
       <div class="eyebrow">Workers on the books</div>
       <div class="search">
         <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
@@ -1055,13 +1203,14 @@
 
   <nav class="bottomnav">
     <div class="tabs">
-      <button data-tab="employees" class="active"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></span><span class="lb">Workers</span></button>
-      <button data-tab="attendance"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></span></span><span class="lb">Attendance</span></button>
-      <button data-tab="advances"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 6v.01M18 18v.01"/></svg></span></span><span class="lb">Advances</span></button>
-      <button data-tab="expenses"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.8a3.3 3.3 0 0 0 0 6.6h4.4a3.3 3.3 0 0 1 0 6.6H6.5"/></svg></span></span><span class="lb">Expenses</span></button>
-      <button data-tab="contractors"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3"/><path d="M17.5 3.5 20.5 6.5l-2 2-3-3Z"/></svg></span></span><span class="lb">Contractors</span></button>
-      <button data-tab="reports"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><rect x="5" y="12" width="3" height="9" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="3" height="14" fill="currentColor" stroke="none"/><rect x="16" y="15" width="3" height="6" fill="currentColor" stroke="none"/></svg></span></span><span class="lb">Reports</span></button>
-      <button data-tab="backup"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17.5 19H6a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.7-2A4.5 4.5 0 0 1 17.5 19Z"/></svg></span></span><span class="lb">Backup</span></button>
+      <button data-tab="dashboard" class="active" title="Dashboard"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span></span><span class="lb">Home</span></button>
+      <button data-tab="employees" title="Workers"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></span><span class="lb">Workers</span></button>
+      <button data-tab="attendance" title="Attendance"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></span></span><span class="lb">Attendance</span></button>
+      <button data-tab="advances" title="Advances"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 6v.01M18 18v.01"/></svg></span></span><span class="lb">Advances</span></button>
+      <button data-tab="expenses" title="Expenses"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.8a3.3 3.3 0 0 0 0 6.6h4.4a3.3 3.3 0 0 1 0 6.6H6.5"/></svg></span></span><span class="lb">Expenses</span></button>
+      <button data-tab="contractors" title="Contractors"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3"/><path d="M17.5 3.5 20.5 6.5l-2 2-3-3Z"/></svg></span></span><span class="lb">Contractors</span></button>
+      <button data-tab="reports" title="Reports"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><rect x="5" y="12" width="3" height="9" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="3" height="14" fill="currentColor" stroke="none"/><rect x="16" y="15" width="3" height="6" fill="currentColor" stroke="none"/></svg></span></span><span class="lb">Reports</span></button>
+      <button data-tab="backup" title="Backup"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17.5 19H6a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.7-2A4.5 4.5 0 0 1 17.5 19Z"/></svg></span></span><span class="lb">Backup</span></button>
     </div>
   </nav>
   </div>
@@ -1089,7 +1238,7 @@
   let expenses = [];    // {id, date, category, amount, note} — site-level costs, scoped to currentSiteId
   let contractors = []; // {id, name, phone, category, rate, rateUnit, note, createdAt, updatedAt} — scoped to currentSiteId
   let contractorEntries = []; // {id, contractorId, date, qty, unit, rate, advance, comment, createdAt} — scoped to currentSiteId
-  let currentTab = 'employees';
+  let currentTab = 'dashboard';
   let editingEmpId = null;
   let currentTheme = 'light';
   let currentAccent = 'orange';
@@ -1387,7 +1536,7 @@
     if(exportNameEl) exportNameEl.textContent = `"${site.name}"`;
     document.getElementById('sitesScreen').classList.add('hidden');
     document.getElementById('siteApp').classList.remove('hidden');
-    switchTab('employees');
+    switchTab('dashboard');
   }
 
   function backToSites(){
@@ -1416,6 +1565,16 @@
 
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
+  // Small debounce helper — used on search inputs so a full re-render only
+  // happens once typing pauses, instead of on every single keystroke.
+  function debounce(fn, wait){
+    let t;
+    return function(...args){
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(this, args), wait);
+    };
+  }
+
   function toast(msg){
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -1427,6 +1586,56 @@
   function totalAdvanceFor(empId){
     return advances.filter(a => a.empId === empId).reduce((s,a) => s + Number(a.amount||0), 0);
   }
+
+  function renderDashboard(){
+    const today = todayISO();
+    const month = today.slice(0,7);
+
+    let presentToday=0, absentToday=0, halfToday=0;
+    employees.forEach(e => {
+      const entry = getDayEntry(today, e.id);
+      if(entry.status==='P') presentToday++;
+      else if(entry.status==='A') absentToday++;
+      else if(entry.status==='H') halfToday++;
+    });
+    const markedToday = presentToday+absentToday+halfToday;
+
+    document.getElementById('dashToday').innerHTML = `
+      <div class="dash-card"><p class="lbl">Workers</p><p class="val">${employees.length}</p></div>
+      <div class="dash-card"><p class="lbl">Present today</p><p class="val green">${presentToday}</p></div>
+      <div class="dash-card"><p class="lbl">Absent today</p><p class="val red">${absentToday}</p></div>
+      <div class="dash-card"><p class="lbl">Not marked yet</p><p class="val">${Math.max(employees.length - markedToday, 0)}</p></div>
+    `;
+
+    const monthConEntries = (typeof contractorEntries !== 'undefined' ? contractorEntries : [])
+      .filter(x => (x.date||'').startsWith(month));
+    const monthExpenses = expenses.filter(x => (x.date||'').startsWith(month)).reduce((s,x) => s + Number(x.amount||0), 0);
+    const monthAdvances = advances.filter(a => (a.date||'').startsWith(month)).reduce((s,a) => s + Number(a.amount||0), 0);
+    const monthConWork = monthConEntries.reduce((s,x) => s + (Number(x.qty)||0)*(Number(x.rate)||0), 0);
+    const monthConAdvance = monthConEntries.reduce((s,x) => s + (Number(x.advance)||0), 0);
+
+    let monthWagePay = 0, monthOtPay = 0;
+    employees.forEach(e => {
+      const sal = salaryForEmployee(e, month);
+      monthWagePay += sal.wagePay;
+      monthOtPay += sal.otPay;
+    });
+    const monthGrossWages = monthWagePay + monthOtPay;
+
+    document.getElementById('dashMonth').innerHTML = `
+      <div class="dash-card"><p class="lbl">Total wages incl. OT</p><p class="val accent">₹${monthGrossWages.toLocaleString('en-IN')}</p></div>
+      <div class="dash-card"><p class="lbl">— of which overtime</p><p class="val accent">₹${monthOtPay.toLocaleString('en-IN')}</p></div>
+      <div class="dash-card"><p class="lbl">Worker advances given</p><p class="val accent">₹${monthAdvances.toLocaleString('en-IN')}</p></div>
+      <div class="dash-card"><p class="lbl">Site expenses</p><p class="val accent">₹${monthExpenses.toLocaleString('en-IN')}</p></div>
+      <div class="dash-card"><p class="lbl">Contractor work value</p><p class="val accent">₹${monthConWork.toLocaleString('en-IN')}</p></div>
+      <div class="dash-card"><p class="lbl">Contractor advances given</p><p class="val accent">₹${monthConAdvance.toLocaleString('en-IN')}</p></div>
+      <div class="dash-card" style="grid-column:1 / -1;"><p class="lbl">Total cash given out this month</p><p class="val">₹${(monthExpenses+monthAdvances+monthConAdvance).toLocaleString('en-IN')}</p></div>
+    `;
+  }
+
+  document.querySelectorAll('.dash-action-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.goto));
+  });
 
   // Attendance entries are stored as {status:'P'|'A'|'H'|'', ot: number}.
   // getDayEntry() also understands the older plain-string format for safety.
@@ -1873,6 +2082,8 @@
       widths.push({ wch: Math.min(maxLen + 2, 34) });
     }
     ws['!cols'] = widths;
+    // Freeze the header row so it stays visible while scrolling a long sheet.
+    if(range.e.r > 1) ws['!views'] = [{ state:'frozen', ySplit:1, topLeftCell:'A2', activePane:'bottomLeft' }];
   }
 
   function presentDaysInPeriod(empId, month){
@@ -2067,15 +2278,57 @@
       updateExportMonthVisibility();
     });
   });
+  function buildSummarySheet(month){
+    let grossPay = 0, otPay = 0, wagePay = 0;
+    employees.forEach(e => {
+      const sal = month ? salaryForEmployee(e, month) : salaryForEmployeeAllTime(e);
+      grossPay += sal.gross; otPay += sal.otPay; wagePay += sal.wagePay;
+    });
+    const advTotal = (month ? advances.filter(a => (a.date||'').startsWith(month)) : advances)
+      .reduce((s,a) => s + Number(a.amount||0), 0);
+    const expTotal = (month ? expenses.filter(x => (x.date||'').startsWith(month)) : expenses)
+      .reduce((s,x) => s + Number(x.amount||0), 0);
+    const conList = (typeof contractors !== 'undefined') ? contractors : [];
+    const conEntries = (typeof contractorEntries !== 'undefined') ? contractorEntries : [];
+    const scopedConEntries = month ? conEntries.filter(x => (x.date||'').startsWith(month)) : conEntries;
+    const conWork = scopedConEntries.reduce((s,x) => s + (Number(x.qty)||0)*(Number(x.rate)||0), 0);
+    const conAdv = scopedConEntries.reduce((s,x) => s + (Number(x.advance)||0), 0);
+
+    const rows = [
+      { 'Metric': 'Period', 'Value': month || 'All Time' },
+      { 'Metric': 'Total workers', 'Value': employees.length },
+      { 'Metric': 'Wage pay (present + half days)', 'Value': Math.round(wagePay) },
+      { 'Metric': 'Overtime pay', 'Value': Math.round(otPay) },
+      { 'Metric': 'Gross salary (wage + OT)', 'Value': Math.round(grossPay) },
+      { 'Metric': 'Advances given to workers', 'Value': Math.round(advTotal) },
+      { 'Metric': 'Net salary payable (gross − advances)', 'Value': Math.round(grossPay - advTotal) },
+      { 'Metric': '', 'Value': '' },
+      { 'Metric': 'Site expenses', 'Value': Math.round(expTotal) },
+      { 'Metric': '', 'Value': '' },
+      { 'Metric': 'Total contractors', 'Value': conList.length },
+      { 'Metric': 'Contractor work value', 'Value': Math.round(conWork) },
+      { 'Metric': 'Contractor advances given', 'Value': Math.round(conAdv) },
+      { 'Metric': '', 'Value': '' },
+      { 'Metric': 'TOTAL CASH GIVEN OUT (advances + site expenses + contractor advances)', 'Value': Math.round(advTotal + expTotal + conAdv) },
+    ];
+    const ws = XLSX.utils.json_to_sheet(rows);
+    autoFitColumns(ws);
+    return ws;
+  }
+
   function buildWorkbook(){
     const wb = XLSX.utils.book_new();
     const month = selectedExportMonth();
+    XLSX.utils.book_append_sheet(wb, buildSummarySheet(month), 'Summary');
     XLSX.utils.book_append_sheet(wb, buildEmployeesSheet(month), 'Workers');
     XLSX.utils.book_append_sheet(wb, buildAttendanceSheet(null, month), 'Attendance');
     XLSX.utils.book_append_sheet(wb, buildAdvancesSheet(null, month), 'Advances');
     XLSX.utils.book_append_sheet(wb, buildExpensesSheet(month), 'Site Expenses');
     const salSheet = buildSalarySheet(month);
     XLSX.utils.book_append_sheet(wb, salSheet, month ? `Salary ${month}` : 'Salary AllTime');
+    if(typeof contractors !== 'undefined' && contractors.length){
+      XLSX.utils.book_append_sheet(wb, buildContractorsSheet(), 'Contractors');
+    }
     return wb;
   }
 
@@ -2134,6 +2387,7 @@
     document.getElementById('panel-' + tab).classList.add('active');
     document.querySelectorAll('.bottomnav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     document.getElementById('fabBtn').style.display = (tab === 'employees' || tab === 'advances' || tab === 'expenses' || tab === 'contractors') ? 'flex' : 'none';
+    if(tab === 'dashboard') renderDashboard();
     if(tab === 'employees') renderEmployees();
     if(tab === 'attendance') renderAttendance();
     if(tab === 'advances') renderAdvances();
@@ -2210,7 +2464,7 @@
     });
   }
 
-  document.getElementById('empSearch').addEventListener('input', renderEmployees);
+  document.getElementById('empSearch').addEventListener('input', debounce(renderEmployees, 150));
   document.getElementById('empSort').addEventListener('change', renderEmployees);
 
   function openEmployeeModal(id){
@@ -2410,7 +2664,7 @@
   }
 
   document.getElementById('attDate').addEventListener('change', renderAttendance);
-  document.getElementById('attSearch').addEventListener('input', renderAttendance);
+  document.getElementById('attSearch').addEventListener('input', debounce(renderAttendance, 150));
   document.getElementById('attSort').addEventListener('change', renderAttendance);
   document.getElementById('markAllPresent').addEventListener('click', async () => {
     const date = document.getElementById('attDate').value || todayISO();
@@ -2624,7 +2878,7 @@
     });
   });
   document.getElementById('advMonth').addEventListener('change', renderAdvances);
-  document.getElementById('advSearch').addEventListener('input', renderAdvances);
+  document.getElementById('advSearch').addEventListener('input', debounce(renderAdvances, 150));
   document.getElementById('advSort').addEventListener('change', renderAdvances);
   document.getElementById('advReportEmployee').addEventListener('change', renderAdvances);
 
@@ -2750,7 +3004,7 @@
       renderExpenses();
     });
   });
-  document.getElementById('expSearch').addEventListener('input', renderExpenses);
+  document.getElementById('expSearch').addEventListener('input', debounce(renderExpenses, 150));
   document.getElementById('expSort').addEventListener('change', renderExpenses);
   document.getElementById('expMonth').addEventListener('change', renderExpenses);
 
@@ -3022,14 +3276,14 @@
       renderContractorProfile();
     });
   });
-  document.getElementById('conSearch').addEventListener('input', renderContractorList);
+  document.getElementById('conSearch').addEventListener('input', debounce(renderContractorList, 150));
   document.getElementById('conSort').addEventListener('change', renderContractorList);
   document.getElementById('conSelect').addEventListener('change', () => {
     document.getElementById('conUnit').dataset.filledFor = '';
     renderContractorProfile();
   });
   document.getElementById('conMonth').addEventListener('change', renderContractorProfile);
-  document.getElementById('conLogSearch').addEventListener('input', renderContractorProfile);
+  document.getElementById('conLogSearch').addEventListener('input', debounce(renderContractorProfile, 150));
   document.getElementById('conLogSort').addEventListener('change', renderContractorProfile);
 
   document.getElementById('addContractorBtn').addEventListener('click', async () => {
@@ -3238,7 +3492,7 @@
       <div class="srow"><span>Total overtime pay</span><b>₹${sums.otPay.toLocaleString('en-IN')}</b></div>
       <div class="srow"><span>Total gross pay (wage + OT)</span><b>₹${sums.gross.toLocaleString('en-IN')}</b></div>
       <div class="srow"><span>${advLabel}</span><b>− ₹${sums.adv.toLocaleString('en-IN')}</b></div>
-      <div class="srow" style="border-top:2px solid var(--line);padding-top:10px;margin-top:2px;"><span><b>Total net payable</b></span><b style="color:var(--accent-dark);font-size:15.5px;">₹${sums.net.toLocaleString('en-IN')}</b></div>
+      <div class="srow" style="border-top:2px solid var(--line);padding-top:10px;margin-top:2px;"><span><b>Total net payable</b></span><b style="color:var(--accent-text);font-size:15.5px;">₹${sums.net.toLocaleString('en-IN')}</b></div>
     `;
 
     listEl.innerHTML = rows.map(r => `
@@ -3321,7 +3575,7 @@
       <div class="srow"><span>Overtime pay (${sal.stats.ot}h × ₹${sal.rate}/h)</span><b>₹${sal.otPay.toLocaleString('en-IN')}</b></div>
       <div class="srow"><span><b>Gross pay</b></span><b>₹${sal.gross.toLocaleString('en-IN')}</b></div>
       <div class="srow"><span>${advLabel}</span><b>− ₹${sal.advThisMonth.toLocaleString('en-IN')}</b></div>
-      <div class="srow" style="border-top:2px solid var(--line);padding-top:10px;margin-top:2px;"><span><b>${netLabel}</b></span><b style="color:var(--accent-dark);font-size:16px;">₹${sal.net.toLocaleString('en-IN')}</b></div>
+      <div class="srow" style="border-top:2px solid var(--line);padding-top:10px;margin-top:2px;"><span><b>${netLabel}</b></span><b style="color:var(--accent-text);font-size:16px;">₹${sal.net.toLocaleString('en-IN')}</b></div>
       ${month ? `<p class="field-hint" style="margin-top:10px;">Lifetime outstanding advance (all-time, separate from this month's salary): <b>₹${lifetimeOutstanding.toLocaleString('en-IN')}</b></p>` : ''}
     `;
   }
