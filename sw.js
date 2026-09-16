@@ -1,4 +1,6 @@
-const CACHE = 'lakhan-register-v14';
+// Bump this on every deploy so old caches are discarded.
+const CACHE = 'lakhan-register-v15';
+
 const SHELL = [
   './',
   './index.html',
@@ -12,10 +14,17 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  // NOTE: no skipWaiting() here on purpose. The page decides when to
+  // activate a new version (it posts 'SKIP_WAITING' below), so an update
+  // can't swap itself in and force-reload the page while someone is
+  // part-way through typing an entry.
   event.waitUntil(
     caches.open(CACHE).then((cache) => cache.addAll(SHELL)).catch(() => {})
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -27,21 +36,49 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Cache-first for the app shell, stale-while-revalidate for everything else
-// (including the xlsx library from cdnjs) so the app keeps working offline
-// once it's been opened at least once.
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+// Only Cache Storage is touched anywhere in this file. Worker/site data
+// lives in IndexedDB, which is never read, written or deleted here — so a
+// service-worker update can discard stale assets without any risk to
+// saved sites, workers, attendance, advances, expenses or contractors.
 
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+
+  // NEVER cache the auth/session endpoints. A cached {authenticated:true}
+  // could otherwise be replayed to skip the login screen on a shared
+  // device even after logout. Always go straight to the network.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
+    return; // let the browser handle it normally, uncached
+  }
+
+  // Network-first for page navigations so a deployed update is picked up
+  // immediately instead of a stale shell being served from cache. Falls
+  // back to the cached shell when offline.
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((resp) => {
+          const clone = resp.clone();
+          caches.open(CACHE).then((cache) => cache.put('./index.html', clone)).catch(() => {});
+          return resp;
+        })
+        .catch(() => caches.match('./index.html').then((c) => c || caches.match('./')))
+    );
+    return;
+  }
+
+  // Everything else (icons, fonts, the lazily-loaded xlsx library):
+  // serve from cache if present, refresh in the background.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
+    caches.match(req).then((cached) => {
+      const fetchPromise = fetch(req)
         .then((networkResp) => {
-          const okToCache =
-            networkResp && (networkResp.status === 200 || networkResp.type === 'opaque');
-          if (okToCache) {
+          if (networkResp && networkResp.status === 200) {
             const clone = networkResp.clone();
-            caches.open(CACHE).then((cache) => cache.put(event.request, clone));
+            caches.open(CACHE).then((cache) => cache.put(req, clone)).catch(() => {});
           }
           return networkResp;
         })

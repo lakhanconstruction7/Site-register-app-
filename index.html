@@ -15,10 +15,18 @@
 <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
 <link rel="icon" href="./icon-64.png" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+<!-- Fonts: preconnect + direct stylesheet link. A CSS @import can only be
+     discovered after the main stylesheet has downloaded and parsed, which
+     serialises the two requests; a link here lets the browser start the
+     font CSS immediately. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" />
 
+<!-- The XLSX library is NOT loaded here on purpose: it is ~900KB and only
+     needed when someone actually exports. ensureXLSX() fetches it on first
+     export instead, so it no longer blocks first paint. -->
+<style>
   :root{
     --ink:#17181C;
     --ink-2:#2A2C32;
@@ -182,7 +190,7 @@
   }
   .dash-card .lbl{ font-size:11.5px; color:var(--text-muted); font-weight:600; margin:0 0 6px; line-height:1.3; }
   .dash-card .val{ font-family:var(--font-mono); font-size:19px; font-weight:700; color:var(--text); margin:0; }
-  .dash-card .val.accent{ color:var(--accent-dark); }
+  .dash-card .val.accent{ color:var(--accent-text); }
   .dash-card .val.green{ color:var(--green); }
   .dash-card .val.red{ color:var(--red); }
   .dash-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
@@ -293,7 +301,11 @@
        go icon-only so every tab is always visible and evenly spaced. */
     nav.bottomnav .tabs{ overflow-x:visible; }
     nav.bottomnav button{ flex:1 1 0; min-width:0; padding:12px 2px 10px; }
-    nav.bottomnav button .lb{ display:none; }
+    nav.bottomnav button .lb{ display:none; font-size:9px; margin-top:1px; }
+    /* Still show the label for whichever tab is currently open, so new
+       users can learn what each icon means without guessing or tapping
+       through all of them first. */
+    nav.bottomnav button.active .lb{ display:block; }
   }
   nav.bottomnav button .ic{
     font-size:19px; line-height:1;
@@ -716,6 +728,23 @@
   @media (prefers-reduced-motion: reduce){
     *{ transition:none !important; animation:none !important; }
   }
+
+  /* Month roster bar (attendance) */
+  .roster-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--paper); border:1px solid var(--line); border-radius:13px;
+    padding:11px 13px; margin-bottom:12px;
+  }
+  .roster-bar.unset{ border-color:var(--accent); background:var(--accent-soft); }
+  .roster-bar .rb-title{ margin:0; font-family:var(--font-display); font-weight:700; font-size:13.5px; }
+  .roster-bar .rb-sub{ margin:2px 0 0; font-size:11.5px; color:var(--text-muted); }
+  .roster-row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 4px; border-bottom:1px solid var(--line); cursor:pointer;
+  }
+  .roster-row:last-child{ border-bottom:none; }
+  .roster-row input{ width:18px; height:18px; accent-color:var(--accent); flex-shrink:0; }
+  .roster-row .roster-name{ flex:1; font-size:14px; font-weight:500; }
 </style>
 </head>
 <body>
@@ -728,7 +757,7 @@
         <img class="login-logo" src="./logo-header.png" alt="Lakhan Construction" />
         <p class="login-sub">Site Register — enter the password to continue</p>
         <div class="field">
-          <label>Password</label>
+          <label for="loginPassword">Password</label>
           <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="off" />
         </div>
         <p class="login-error" id="loginError">Incorrect password. Try again.</p>
@@ -748,9 +777,9 @@
             <div class="sub">Choose a Site</div>
           </div>
         </div>
-        <button class="icon-btn" id="topSyncBtn" title="Sync now"><span class="icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4"/><path d="M21 3v6h-6"/><path d="M3 21v-6h6"/></svg></span></button>
-        <button class="icon-btn" id="lockBtn" title="Lock app"><span class="icon"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></button>
-        <button class="icon-btn" id="globalSettingsBtn" title="Appearance"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z"/></svg></span></button>
+        <button class="icon-btn" id="topSyncBtn" title="Sync now" aria-label="Sync now"><span class="icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4"/><path d="M21 3v6h-6"/><path d="M3 21v-6h6"/></svg></span></button>
+        <button class="icon-btn" id="lockBtn" title="Lock app" aria-label="Lock app"><span class="icon"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></button>
+        <button class="icon-btn" id="globalSettingsBtn" title="Appearance" aria-label="Appearance"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z"/></svg></span></button>
       </div>
     </header>
     <main>
@@ -766,7 +795,7 @@
       <div class="eyebrow">Your construction sites</div>
       <div id="sitesList"></div>
     </main>
-    <button class="fab" id="addSiteFab">+</button>
+    <button class="fab" id="addSiteFab" aria-label="Add new site">+</button>
   </div>
 
   <!-- SINGLE SITE APP -->
@@ -775,7 +804,7 @@
   <header class="topbar">
     <div class="row">
       <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-        <button class="icon-btn" id="backToSitesBtn" title="All sites"><span class="icon"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></span></button>
+        <button class="icon-btn" id="backToSitesBtn" title="All sites" aria-label="Back to all sites"><span class="icon"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></span></button>
         <img src="./icon-192.png" alt="" style="width:30px;height:30px;border-radius:8px;flex-shrink:0;" />
         <div style="min-width:0;">
           <h1 id="siteTitle" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Site</h1>
@@ -784,9 +813,9 @@
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
         <div class="count" id="headerCount">0 workers</div>
-        <button class="icon-btn" id="topSyncBtnSite" title="Sync now"><span class="icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4"/><path d="M21 3v6h-6"/><path d="M3 21v-6h6"/></svg></span></button>
-        <button class="icon-btn" id="renameSiteBtn" title="Rename site"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></span></button>
-        <button class="icon-btn" id="settingsBtn" title="Appearance"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z"/></svg></span></button>
+        <button class="icon-btn" id="topSyncBtnSite" title="Sync now" aria-label="Sync now"><span class="icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4"/><path d="M21 3v6h-6"/><path d="M3 21v-6h6"/></svg></span></button>
+        <button class="icon-btn" id="renameSiteBtn" title="Rename site" aria-label="Rename site"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></span></button>
+        <button class="icon-btn" id="settingsBtn" title="Appearance" aria-label="Appearance"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z"/></svg></span></button>
       </div>
     </div>
     <div class="sync-pill local" id="syncPill" title="Tap for backup & sync options">
@@ -801,7 +830,11 @@
       <div class="eyebrow" style="margin-top:0;">Today at a glance</div>
       <div class="dash-grid" id="dashToday"></div>
 
-      <div class="eyebrow">This month</div>
+      <div class="eyebrow" id="dashMonthLabel">This month</div>
+      <div class="date-row" style="margin-bottom:12px;">
+        <input type="month" id="dashMonthPicker" style="flex:1;" />
+        <button class="quick-btn" id="dashMonthResetBtn" title="Jump back to the current month">This month</button>
+      </div>
       <div class="dash-grid" id="dashMonth"></div>
 
       <div class="eyebrow">Quick actions</div>
@@ -835,6 +868,7 @@
         <input type="date" id="attDate" />
         <button class="quick-btn" id="markAllPresent">Mark all Present</button>
       </div>
+      <div id="attRosterBar"></div>
       <div class="summary-chips" id="attSummary"></div>
       <div class="search">
         <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
@@ -852,19 +886,19 @@
       <div class="eyebrow">Record an advance</div>
       <div class="card-block">
         <div class="field">
-          <label>Worker</label>
+          <label for="advEmployee">Worker</label>
           <select id="advEmployee"></select>
         </div>
         <div class="field">
-          <label>Amount (₹)</label>
+          <label for="advAmount">Amount (₹)</label>
           <input type="number" id="advAmount" inputmode="decimal" placeholder="e.g. 2000" />
         </div>
         <div class="field">
-          <label>Date</label>
+          <label for="advDate">Date</label>
           <input type="date" id="advDate" />
         </div>
         <div class="field">
-          <label>Note (optional)</label>
+          <label for="advNote">Note (optional)</label>
           <input type="text" id="advNote" placeholder="e.g. Advance for medical need" />
         </div>
         <button class="btn-primary" id="addAdvanceBtn">Add Advance</button>
@@ -901,7 +935,7 @@
 
       <div id="advIndividual" style="display:none;">
         <div class="field">
-          <label>Worker</label>
+          <label for="advReportEmployee">Worker</label>
           <select id="advReportEmployee"></select>
         </div>
         <div class="eyebrow">Calendar</div>
@@ -917,11 +951,11 @@
       <div class="eyebrow">Record a site expense</div>
       <div class="card-block">
         <div class="field">
-          <label>Paid to / Contractor name (optional)</label>
+          <label for="expPayee">Paid to / Contractor name (optional)</label>
           <input type="text" id="expPayee" placeholder="e.g. Ramesh (Plumber contractor)" />
         </div>
         <div class="field">
-          <label>Category</label>
+          <label for="expCategory">Category</label>
           <select id="expCategory">
             <option value="Material">Material purchase</option>
             <option value="Machinery">Machinery cost</option>
@@ -932,15 +966,15 @@
           </select>
         </div>
         <div class="field">
-          <label>Amount (₹)</label>
+          <label for="expAmount">Amount (₹)</label>
           <input type="number" id="expAmount" inputmode="decimal" placeholder="e.g. 5000" />
         </div>
         <div class="field">
-          <label>Date</label>
+          <label for="expDate">Date</label>
           <input type="date" id="expDate" />
         </div>
         <div class="field">
-          <label>Note (optional)</label>
+          <label for="expNote">Note (optional)</label>
           <input type="text" id="expNote" placeholder="e.g. Cement — 20 bags, ABC Traders" />
         </div>
         <button class="btn-primary" id="addExpenseBtn">Add Expense</button>
@@ -981,15 +1015,15 @@
         <div class="eyebrow">Add a contractor</div>
         <div class="card-block">
           <div class="field">
-            <label>Name</label>
+            <label for="conName">Name</label>
             <input type="text" id="conName" placeholder="e.g. Ramesh Kumar" />
           </div>
           <div class="field">
-            <label>Phone</label>
+            <label for="conPhone">Phone</label>
             <input type="tel" id="conPhone" placeholder="10-digit mobile number" />
           </div>
           <div class="field">
-            <label>Category</label>
+            <label for="conCategory">Category</label>
             <select id="conCategory">
               <option value="Shuttering">Shuttering</option>
               <option value="Steel">Steel</option>
@@ -1003,11 +1037,11 @@
           </div>
           <div style="display:flex;gap:10px;">
             <div class="field" style="flex:1;">
-              <label>Rate (₹)</label>
+              <label for="conRate">Rate (₹)</label>
               <input type="number" id="conRate" inputmode="decimal" placeholder="e.g. 45" />
             </div>
             <div class="field" style="flex:1;">
-              <label>Rate Unit</label>
+              <label for="conRateUnit">Rate Unit</label>
               <select id="conRateUnit">
                 <option value="Per Day">Per Day</option>
                 <option value="Per Bundle">Per Bundle</option>
@@ -1019,7 +1053,7 @@
             </div>
           </div>
           <div class="field">
-            <label>Note (optional)</label>
+            <label for="conNote">Note (optional)</label>
             <input type="text" id="conNote" placeholder="Any other detail" />
           </div>
           <button class="btn-primary" id="addContractorBtn">Add Contractor</button>
@@ -1040,7 +1074,7 @@
 
       <div id="conIndividual" style="display:none;">
         <div class="field">
-          <label>Contractor</label>
+          <label for="conSelect">Contractor</label>
           <select id="conSelect"></select>
         </div>
         <div class="card-block" id="conProfileCard"></div>
@@ -1066,7 +1100,7 @@
               <input type="number" id="conQty" inputmode="decimal" placeholder="e.g. 20" />
             </div>
             <div class="field" style="flex:1;">
-              <label>Unit</label>
+              <label for="conUnit">Unit</label>
               <select id="conUnit">
                 <option value="Per Day">Per Day</option>
                 <option value="Per Bundle">Per Bundle</option>
@@ -1078,19 +1112,19 @@
             </div>
           </div>
           <div class="field">
-            <label>Rate for this entry (₹)</label>
+            <label for="conEntryRate">Rate for this entry (₹)</label>
             <input type="number" id="conEntryRate" inputmode="decimal" placeholder="Defaults to contractor's rate" />
           </div>
           <div class="field">
-            <label>Advance given (₹, optional)</label>
+            <label for="conAdvance">Advance given (₹, optional)</label>
             <input type="number" id="conAdvance" inputmode="decimal" placeholder="0" />
           </div>
           <div class="field">
-            <label>Date</label>
+            <label for="conDate">Date</label>
             <input type="date" id="conDate" />
           </div>
           <div class="field">
-            <label>Comment (optional)</label>
+            <label for="conComment">Comment (optional)</label>
             <input type="text" id="conComment" placeholder="e.g. 3rd floor slab shuttering" />
           </div>
           <button class="btn-primary" id="addConEntryBtn">Add Entry</button>
@@ -1142,7 +1176,7 @@
 
       <div id="reportIndividual" style="display:none;">
         <div class="field">
-          <label>Worker</label>
+          <label for="reportEmployee">Worker</label>
           <select id="reportEmployee"></select>
         </div>
         <div class="eyebrow">Calendar</div>
@@ -1199,18 +1233,18 @@
 
   </main>
 
-  <button class="fab" id="fabBtn">+</button>
+  <button class="fab" id="fabBtn" aria-label="Quick add">+</button>
 
   <nav class="bottomnav">
     <div class="tabs">
-      <button data-tab="dashboard" class="active" title="Dashboard"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span></span><span class="lb">Home</span></button>
-      <button data-tab="employees" title="Workers"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></span><span class="lb">Workers</span></button>
-      <button data-tab="attendance" title="Attendance"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></span></span><span class="lb">Attendance</span></button>
-      <button data-tab="advances" title="Advances"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 6v.01M18 18v.01"/></svg></span></span><span class="lb">Advances</span></button>
-      <button data-tab="expenses" title="Expenses"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.8a3.3 3.3 0 0 0 0 6.6h4.4a3.3 3.3 0 0 1 0 6.6H6.5"/></svg></span></span><span class="lb">Expenses</span></button>
-      <button data-tab="contractors" title="Contractors"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3"/><path d="M17.5 3.5 20.5 6.5l-2 2-3-3Z"/></svg></span></span><span class="lb">Contractors</span></button>
-      <button data-tab="reports" title="Reports"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><rect x="5" y="12" width="3" height="9" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="3" height="14" fill="currentColor" stroke="none"/><rect x="16" y="15" width="3" height="6" fill="currentColor" stroke="none"/></svg></span></span><span class="lb">Reports</span></button>
-      <button data-tab="backup" title="Backup"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17.5 19H6a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.7-2A4.5 4.5 0 0 1 17.5 19Z"/></svg></span></span><span class="lb">Backup</span></button>
+      <button data-tab="dashboard" class="active" title="Dashboard" aria-label="Dashboard"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span></span><span class="lb">Home</span></button>
+      <button data-tab="employees" title="Workers" aria-label="Workers"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></span><span class="lb">Workers</span></button>
+      <button data-tab="attendance" title="Attendance" aria-label="Attendance"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></span></span><span class="lb">Attendance</span></button>
+      <button data-tab="advances" title="Advances" aria-label="Advances"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 6v.01M18 18v.01"/></svg></span></span><span class="lb">Advances</span></button>
+      <button data-tab="expenses" title="Expenses" aria-label="Expenses"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.8a3.3 3.3 0 0 0 0 6.6h4.4a3.3 3.3 0 0 1 0 6.6H6.5"/></svg></span></span><span class="lb">Expenses</span></button>
+      <button data-tab="contractors" title="Contractors" aria-label="Contractors"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3"/><path d="M17.5 3.5 20.5 6.5l-2 2-3-3Z"/></svg></span></span><span class="lb">Contractors</span></button>
+      <button data-tab="reports" title="Reports" aria-label="Reports"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><rect x="5" y="12" width="3" height="9" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="3" height="14" fill="currentColor" stroke="none"/><rect x="16" y="15" width="3" height="6" fill="currentColor" stroke="none"/></svg></span></span><span class="lb">Reports</span></button>
+      <button data-tab="backup" title="Backup" aria-label="Backup"><span class="ic"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17.5 19H6a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.7-2A4.5 4.5 0 0 1 17.5 19Z"/></svg></span></span><span class="lb">Backup</span></button>
     </div>
   </nav>
   </div>
@@ -1229,7 +1263,8 @@
   "use strict";
 
   // ---------- State ----------
-  const APP_PASSWORD = 'Lakhan';
+  // Password checks now happen server-side via /api/login and
+  // /api/verify-password — no password or secret lives in this file.
   let sites = [];        // {id, name, createdAt}
   let currentSiteId = null;
   let employees = [];   // {id, name, phone, address, role, wage, joinDate} — scoped to currentSiteId
@@ -1238,6 +1273,13 @@
   let expenses = [];    // {id, date, category, amount, note} — site-level costs, scoped to currentSiteId
   let contractors = []; // {id, name, phone, category, rate, rateUnit, note, createdAt, updatedAt} — scoped to currentSiteId
   let contractorEntries = []; // {id, contractorId, date, qty, unit, rate, advance, comment, createdAt} — scoped to currentSiteId
+  // Tombstones: {id, store, deletedAt}. Records that were deliberately
+  // deleted, so a stale copy on another device can't resurrect them during
+  // merge. Pruned after TOMBSTONE_TTL_DAYS.
+  let tombstones = [];
+  // Month-specific attendance roster: { 'YYYY-MM': [employeeId, ...] }.
+  // Stored separately so no existing attendance record is rewritten.
+  let attendanceRoster = {};
   let currentTab = 'dashboard';
   let editingEmpId = null;
   let currentTheme = 'light';
@@ -1355,6 +1397,15 @@
     catch(e){ contractors = []; }
     try{ const v = await kvGet(siteKey(id,'contractorEntries')); contractorEntries = v ? JSON.parse(v) : []; }
     catch(e){ contractorEntries = []; }
+    try{ const v = await kvGet(siteKey(id,'tombstones')); tombstones = v ? JSON.parse(v) : []; }
+    catch(e){ tombstones = []; }
+    try{ const v = await kvGet(siteKey(id,'attendanceRoster')); attendanceRoster = v ? JSON.parse(v) : {}; }
+    catch(e){ attendanceRoster = {}; }
+    const pruned = pruneTombstones(tombstones);
+    if(pruned.length !== tombstones.length){
+      tombstones = pruned;
+      try{ await kvSet(siteKey(id,'tombstones'), JSON.stringify(tombstones)); }catch(e){}
+    }
   }
   async function loadSiteDataRaw(id){
     let e=[], a={}, adv=[], exp=[], con=[], conE=[];
@@ -1364,7 +1415,10 @@
     try{ const v = await kvGet(siteKey(id,'expenses')); exp = v ? JSON.parse(v) : []; }catch(err){}
     try{ const v = await kvGet(siteKey(id,'contractors')); con = v ? JSON.parse(v) : []; }catch(err){}
     try{ const v = await kvGet(siteKey(id,'contractorEntries')); conE = v ? JSON.parse(v) : []; }catch(err){}
-    return { employees:e, attendance:a, advances:adv, expenses:exp, contractors:con, contractorEntries:conE };
+    let tomb=[], roster={};
+    try{ const v = await kvGet(siteKey(id,'tombstones')); tomb = v ? JSON.parse(v) : []; }catch(err){}
+    try{ const v = await kvGet(siteKey(id,'attendanceRoster')); roster = v ? JSON.parse(v) : {}; }catch(err){}
+    return { employees:e, attendance:a, advances:adv, expenses:exp, contractors:con, contractorEntries:conE, tombstones:tomb, attendanceRoster:roster };
   }
 
   async function saveEmployees(){
@@ -1397,6 +1451,16 @@
     try{ await kvSet(siteKey(currentSiteId,'contractorEntries'), JSON.stringify(contractorEntries)); await touchUpdated(); }
     catch(e){ toast('Could not save — try again'); }
   }
+  async function saveTombstones(){
+    if(!currentSiteId) return;
+    try{ await kvSet(siteKey(currentSiteId,'tombstones'), JSON.stringify(tombstones)); await touchUpdated(); }
+    catch(e){ toast('Could not save — try again'); }
+  }
+  async function saveAttendanceRoster(){
+    if(!currentSiteId) return;
+    try{ await kvSet(siteKey(currentSiteId,'attendanceRoster'), JSON.stringify(attendanceRoster)); await touchUpdated(); }
+    catch(e){ toast('Could not save — try again'); }
+  }
   async function touchUpdated(){
     const ts = new Date().toISOString();
     await kvSet('lc:updated_at', ts);
@@ -1427,9 +1491,9 @@
   function openAddSiteModal(){
     const modal = document.getElementById('modalContent');
     modal.innerHTML = `
-      <button class="close" id="closeModal">✕</button>
+      <button class="close" id="closeModal" aria-label="Close">✕</button>
       <h2>New Site</h2>
-      <div class="field"><label>Site Name *</label><input type="text" id="f_sitename" placeholder="e.g. Bihar Site, Greater Noida Site" /></div>
+      <div class="field"><label for="f_sitename">Site Name *</label><input type="text" id="f_sitename" placeholder="e.g. Bihar Site, Greater Noida Site" /></div>
       <button class="btn-primary" id="createSiteBtn">Create Site</button>
     `;
     showOverlay();
@@ -1438,7 +1502,7 @@
     setTimeout(() => input.focus(), 150);
     document.getElementById('createSiteBtn').addEventListener('click', async () => {
       const name = input.value.trim();
-      if(!name){ toast('Enter a site name'); return; }
+      if(!isValidRequiredText(name)){ toast(name ? 'Site name is too long' : 'Enter a site name'); return; }
       const site = { id: uid(), name, createdAt: new Date().toISOString() };
       sites.push(site);
       await saveSitesList();
@@ -1454,9 +1518,9 @@
     if(!site) return;
     const modal = document.getElementById('modalContent');
     modal.innerHTML = `
-      <button class="close" id="closeModal">✕</button>
+      <button class="close" id="closeModal" aria-label="Close">✕</button>
       <h2>Site Settings</h2>
-      <div class="field"><label>Site Name *</label><input type="text" id="f_sitename" value="${escapeAttr(site.name)}" /></div>
+      <div class="field"><label for="f_sitename">Site Name *</label><input type="text" id="f_sitename" value="${escapeAttr(site.name)}" /></div>
       <button class="btn-primary" id="saveSiteNameBtn">Save Name</button>
 
       <div class="danger-zone">
@@ -1469,7 +1533,7 @@
     document.getElementById('closeModal').addEventListener('click', closeOverlay);
     document.getElementById('saveSiteNameBtn').addEventListener('click', async () => {
       const name = document.getElementById('f_sitename').value.trim();
-      if(!name){ toast('Enter a site name'); return; }
+      if(!isValidRequiredText(name)){ toast(name ? 'Site name is too long' : 'Enter a site name'); return; }
       site.name = name;
       await saveSitesList();
       document.getElementById('siteTitle').textContent = name;
@@ -1483,10 +1547,10 @@
   function confirmDeleteSiteModal(site){
     const modal = document.getElementById('modalContent');
     modal.innerHTML = `
-      <button class="close" id="closeModal">✕</button>
+      <button class="close" id="closeModal" aria-label="Close">✕</button>
       <h2>Delete "${escapeHtml(site.name)}"?</h2>
       <p class="danger-hint">This permanently deletes all workers, attendance and advance records for this site — it can't be undone. Enter the password to confirm.</p>
-      <div class="field"><label>Password</label><input type="password" id="delSitePw" placeholder="Enter password" autocomplete="off" /></div>
+      <div class="field"><label for="delSitePw">Password</label><input type="password" id="delSitePw" placeholder="Enter password" autocomplete="off" /></div>
       <p class="login-error" id="delSiteError" style="margin-top:-8px;">Incorrect password. Try again.</p>
       <button class="btn-danger" style="width:100%;padding:13px;" id="confirmDeleteSiteBtn">Delete Site Permanently</button>
       <button class="btn-ghost" style="width:100%;padding:13px;margin-top:8px;" id="cancelDeleteSiteBtn">Cancel</button>
@@ -1498,7 +1562,12 @@
     setTimeout(() => pwInput.focus(), 150);
 
     async function attemptDelete(){
-      if(pwInput.value !== APP_PASSWORD){
+      const btn = document.getElementById('confirmDeleteSiteBtn');
+      btn.disabled = true;
+      const result = await checkPasswordServerSide(pwInput.value);
+      btn.disabled = false;
+      if(!result.ok){
+        errEl.textContent = passwordErrorMessage(result);
         errEl.style.display = 'block';
         pwInput.value = '';
         pwInput.focus();
@@ -1522,6 +1591,8 @@
     await kvDelete(siteKey(id,'expenses'));
     await kvDelete(siteKey(id,'contractors'));
     await kvDelete(siteKey(id,'contractorEntries'));
+    await kvDelete(siteKey(id,'tombstones'));
+    await kvDelete(siteKey(id,'attendanceRoster'));
     if(currentSiteId === id) currentSiteId = null;
     await touchUpdated();
   }
@@ -1563,7 +1634,85 @@
   document.getElementById('topSyncBtn').addEventListener('click', () => manualSyncNow('topSyncBtn'));
   document.getElementById('topSyncBtnSite').addEventListener('click', () => manualSyncNow('topSyncBtnSite'));
 
-  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  // Unique IDs for new records. crypto.randomUUID() is cryptographically
+  // strong and has no realistic collision risk, unlike the old
+  // Date.now()+Math.random() approach it replaces. This only affects IDs
+  // generated for NEW records from now on — nothing re-generates or
+  // touches IDs already stored on existing records, so nothing here can
+  // change or invalidate data that's already saved.
+  function uid(){
+    if(typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'){
+      return crypto.randomUUID();
+    }
+    // Fallback for older browsers without crypto.randomUUID() (e.g. Safari
+    // < 15.4, or a non-secure context). Prefer crypto.getRandomValues() —
+    // still cryptographically strong, just assembled into a UUID v4 by
+    // hand — and only fall back to Math.random() if even that is missing.
+    if(typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'){
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+      bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10
+      const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+    }
+    return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+
+  // ---------- Shared input validation ----------
+  // These only ever REJECT bad new input at the point of entry (the save
+  // handler shows a toast and aborts) — they never rewrite, round, clamp,
+  // or "fix" a value on their own, and they're never run as a pass over
+  // already-stored data, so nothing already saved is touched by adding
+  // these checks.
+  const MAX_TEXT_LEN = 120;      // names, roles, categories — plenty for real use, blocks abuse
+  const MAX_NOTE_LEN = 500;      // notes/comments, which run a bit longer
+
+  function isValidRequiredText(s, maxLen){
+    return typeof s === 'string' && s.trim().length > 0 && s.trim().length <= (maxLen || MAX_TEXT_LEN);
+  }
+
+  function isValidOptionalText(s, maxLen){
+    return typeof s !== 'string' || s.trim().length <= (maxLen || MAX_NOTE_LEN);
+  }
+
+  // Strict YYYY-MM-DD, and must be a real calendar date — rejects malformed
+  // strings (letters, wrong separators) and impossible dates alike (e.g.
+  // 2026-13-40, or 2026-02-30).
+  function isValidDateString(s){
+    if(typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+    const [y, m, d] = s.split('-').map(Number);
+    if(m < 1 || m > 12) return false;
+    if(d < 1 || d > new Date(y, m, 0).getDate()) return false;
+    return true;
+  }
+
+  // Lenient on formatting (spaces/dashes/parentheses/+ all fine) but
+  // requires a plausible number of actual digits, so it rejects empty,
+  // letters-only, or obviously truncated input without being fussy about
+  // exactly how a number is formatted.
+  function isValidPhone(s){
+    if(typeof s !== 'string') return false;
+    const digits = s.replace(/\D/g, '');
+    return digits.length >= 7 && digits.length <= 15;
+  }
+
+  // For amounts/rates/quantities: rejects NaN, +/-Infinity, and negatives
+  // (all real bugs found in the earlier audit — e.g. a negative advance
+  // would silently ADD to a worker's pay instead of subtracting). Set
+  // allowZero:false for fields where zero is meaningless (an advance or
+  // expense of ₹0 isn't a real entry); leave it true (the default) for
+  // fields where zero is a legitimate value (wage/rate left at 0, no
+  // overtime, no quantity logged yet).
+  function isValidNumber(n, { allowZero = true } = {}){
+    if(typeof n !== 'number' || !Number.isFinite(n)) return false;
+    if(n < 0) return false;
+    if(!allowZero && n === 0) return false;
+    return true;
+  }
+
+  function isValidAttendanceStatus(s){
+    return s === '' || s === 'P' || s === 'A' || s === 'H';
+  }
 
   // Small debounce helper — used on search inputs so a full re-render only
   // happens once typing pauses, instead of on every single keystroke.
@@ -1589,7 +1738,6 @@
 
   function renderDashboard(){
     const today = todayISO();
-    const month = today.slice(0,7);
 
     let presentToday=0, absentToday=0, halfToday=0;
     employees.forEach(e => {
@@ -1606,6 +1754,12 @@
       <div class="dash-card"><p class="lbl">Absent today</p><p class="val red">${absentToday}</p></div>
       <div class="dash-card"><p class="lbl">Not marked yet</p><p class="val">${Math.max(employees.length - markedToday, 0)}</p></div>
     `;
+
+    const monthPicker = document.getElementById('dashMonthPicker');
+    const currentMonth = today.slice(0,7);
+    if(!monthPicker.value) monthPicker.value = currentMonth;
+    const month = monthPicker.value;
+    document.getElementById('dashMonthLabel').textContent = month === currentMonth ? 'This month' : `Month: ${month}`;
 
     const monthConEntries = (typeof contractorEntries !== 'undefined' ? contractorEntries : [])
       .filter(x => (x.date||'').startsWith(month));
@@ -1629,12 +1783,17 @@
       <div class="dash-card"><p class="lbl">Site expenses</p><p class="val accent">₹${monthExpenses.toLocaleString('en-IN')}</p></div>
       <div class="dash-card"><p class="lbl">Contractor work value</p><p class="val accent">₹${monthConWork.toLocaleString('en-IN')}</p></div>
       <div class="dash-card"><p class="lbl">Contractor advances given</p><p class="val accent">₹${monthConAdvance.toLocaleString('en-IN')}</p></div>
-      <div class="dash-card" style="grid-column:1 / -1;"><p class="lbl">Total cash given out this month</p><p class="val">₹${(monthExpenses+monthAdvances+monthConAdvance).toLocaleString('en-IN')}</p></div>
+      <div class="dash-card" style="grid-column:1 / -1;"><p class="lbl">Total cash given out ${month === currentMonth ? 'this month' : 'in ' + month}</p><p class="val">₹${(monthExpenses+monthAdvances+monthConAdvance).toLocaleString('en-IN')}</p></div>
     `;
   }
 
   document.querySelectorAll('.dash-action-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.goto));
+  });
+  document.getElementById('dashMonthPicker').addEventListener('change', renderDashboard);
+  document.getElementById('dashMonthResetBtn').addEventListener('click', () => {
+    document.getElementById('dashMonthPicker').value = todayISO().slice(0,7);
+    renderDashboard();
   });
 
   // Attendance entries are stored as {status:'P'|'A'|'H'|'', ot: number}.
@@ -1649,6 +1808,16 @@
     if(!attendance[date]) attendance[date] = {};
     const cur = getDayEntry(date, empId);
     const next = Object.assign({}, cur, patch);
+    // Defense in depth: guard against invalid data ever being written here,
+    // regardless of caller. The UI only ever sends valid values through
+    // this function, so in normal use these checks never change anything —
+    // they just stop a bad patch (e.g. from a future code path or a
+    // corrupted sync payload) from being written silently.
+    if(!isValidAttendanceStatus(next.status)) next.status = cur.status || '';
+    if(next.ot !== undefined && next.ot !== null && next.ot !== ''){
+      const otNum = Number(next.ot);
+      next.ot = isValidNumber(otNum) ? otNum : (cur.ot || 0);
+    }
     if(!next.status && !next.ot){ delete attendance[date][empId]; }
     else{ next.updatedAt = new Date().toISOString(); attendance[date][empId] = next; }
   }
@@ -1729,6 +1898,16 @@
   let driveXlsxIds = {};       // per-site visible xlsx file id, keyed by siteId
   let driveConnected = false;
   let syncTimer = null;
+  // Optimistic-concurrency state. driveFileVersion is Drive's own version
+  // counter for our JSON file as of the last time we successfully read or
+  // wrote it. If the version on Drive differs from this when we go to push,
+  // it means another device wrote after the copy we based our edits on —
+  // that's a conflict, and we merge instead of overwriting.
+  let driveFileVersion = null;
+  // Serialises every push. Concurrent callers queue behind the in-flight
+  // one instead of racing it (which previously could create two Drive
+  // files, or clobber each other's upload).
+  let pushChain = Promise.resolve(false);
 
   function setSyncStatus(state, label){
     const pill = document.getElementById('syncPill');
@@ -1752,6 +1931,38 @@
     else if(state === 'offline'){ dot.className = 'status-dot'; txt.textContent = 'Connected — sync failed'; sub.textContent = 'Will retry on next change'; }
     else if(driveConnected){ dot.className = 'status-dot on'; txt.textContent = 'Connected'; }
     else{ dot.className = 'status-dot'; txt.textContent = 'Not connected'; sub.textContent = 'Turn this on to sync across phones/computers'; }
+  }
+
+  // Lazily loads the SheetJS/XLSX library the first time an Excel export is
+  // actually requested, instead of on every page load. The library is ~900KB
+  // and most visits never export anything. Mirrors the existing loadGIS()
+  // pattern so there's one consistent way to pull in a third-party script.
+  let xlsxLoadPromise = null;
+  function ensureXLSX(){
+    if(window.XLSX) return Promise.resolve(true);
+    if(xlsxLoadPromise) return xlsxLoadPromise; // never request it twice
+    xlsxLoadPromise = new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = () => resolve(!!window.XLSX);
+      s.onerror = () => { xlsxLoadPromise = null; resolve(false); };
+      document.head.appendChild(s);
+    });
+    return xlsxLoadPromise;
+  }
+
+  // Wraps an export handler so the library is fetched (once) before it runs,
+  // and a failure to load is reported instead of throwing a bare
+  // "XLSX is not defined" at the user.
+  function withXLSX(handler){
+    return async function(...args){
+      if(!window.XLSX){
+        toast('Preparing Excel…');
+        const ok = await ensureXLSX();
+        if(!ok){ toast('Could not load the Excel library — check your connection'); return; }
+      }
+      return handler.apply(this, args);
+    };
   }
 
   function loadGIS(){
@@ -1853,6 +2064,7 @@
       if(!res.ok) return false;
       const remote = await res.json();
       if(!remote || !Array.isArray(remote.sites)) return false;
+      if(remote.sites.length === 0) return false;
       sites = remote.sites || [];
       await kvSet('lc:sites', JSON.stringify(sites));
       const siteData = remote.siteData || {};
@@ -1865,6 +2077,9 @@
         await kvSet(siteKey(id,'contractorEntries'), JSON.stringify(siteData[id].contractorEntries || []));
       }
       await kvSet('lc:updated_at', remote.updatedAt || new Date().toISOString());
+      // Record the version we just adopted as our baseline, so the first
+      // push after connecting doesn't look like a conflict against itself.
+      driveFileVersion = await fetchDriveFileVersion();
       if(currentSiteId){
         if(sites.find(s => s.id === currentSiteId)){
           await loadSiteData(currentSiteId);
@@ -1882,6 +2097,11 @@
   function disconnectDrive(){
     driveConnected = false;
     driveToken = null;
+    // Clear the sync baseline too — on reconnect we re-establish it from
+    // whatever is actually on Drive, rather than trusting a stale version
+    // number from a previous session.
+    driveFileVersion = null;
+    driveFileId = null;
     kvSet('lc:drive_connected', 'false');
     setSyncStatus('local');
     updateDriveButtons();
@@ -1899,28 +2119,372 @@
     setSyncStatus(driveConnected ? 'synced' : 'local');
   }
 
+  // ---------- Record-level merge ----------
+  // The sync file is a whole-dataset snapshot, so when two devices both
+  // edit between syncs we can't rely on a single global timestamp without
+  // throwing away one side's work. These helpers merge record by record
+  // instead, keeping whichever copy of each individual record is newer.
+  //
+  // KNOWN LIMITATION — deletions: records are hard-deleted (removed from
+  // the array), so there is no tombstone marking "this was deleted on
+  // purpose". In a genuine conflict (both devices edited since the last
+  // sync) a record deleted on device A but still present on device B will
+  // come back, because from the merge's point of view it's indistinguishable
+  // from a record B just added. Resurrecting a deleted row is recoverable
+  // (delete it again); silently destroying a day of work on one device is
+  // not — so the merge deliberately errs toward keeping data. The user is
+  // told when this happens rather than it being hidden.
+  function recordStamp(r){
+    return (r && (r.updatedAt || r.createdAt)) || '';
+  }
+
+  // ---------- Deletion tombstones ----------
+  // Kept for this long so a device that was offline for a while still learns
+  // about deletions when it finally syncs. Beyond this window a stale copy
+  // could in theory reappear — 90 days is well past any realistic sync gap
+  // for this app, and keeping them forever would grow the sync file without
+  // bound.
+  const TOMBSTONE_TTL_DAYS = 90;
+
+  function addTombstone(store, id){
+    if(!store || !id) return;
+    const deletedAt = new Date().toISOString();
+    const existing = tombstones.find(t => t.store === store && t.id === id);
+    if(existing) existing.deletedAt = deletedAt;
+    else tombstones.push({ id, store, deletedAt });
+  }
+
+  function mergeTombstoneLists(localT, remoteT){
+    const byKey = new Map();
+    const take = (list) => (Array.isArray(list) ? list : []).forEach(t => {
+      if(!t || !t.id || !t.store) return;
+      const key = t.store + ':' + t.id;
+      const prev = byKey.get(key);
+      // Keep the most recent deletion for any given record.
+      if(!prev || (t.deletedAt || '') > (prev.deletedAt || '')) byKey.set(key, t);
+    });
+    take(localT); take(remoteT);
+    return Array.from(byKey.values());
+  }
+
+  function pruneTombstones(list){
+    const cutoff = new Date(Date.now() - TOMBSTONE_TTL_DAYS * 86400000).toISOString();
+    return (Array.isArray(list) ? list : []).filter(t => (t.deletedAt || '') > cutoff);
+  }
+
+  // Drops records that a tombstone says were deleted. A record survives only
+  // if the existing versioning rules prove it was touched AFTER the deletion
+  // (i.e. someone genuinely re-edited it later) — otherwise the deletion wins.
+  function applyTombstones(arr, tombs, store){
+    if(!Array.isArray(arr) || !arr.length) return arr || [];
+    const map = new Map();
+    (tombs || []).forEach(t => { if(t.store === store) map.set(t.id, t.deletedAt || ''); });
+    if(!map.size) return arr;
+    return arr.filter(r => {
+      const deletedAt = map.get(r.id);
+      if(deletedAt === undefined) return true;
+      return recordStamp(r) > deletedAt;
+    });
+  }
+
+  function applyAttendanceTombstones(att, tombs){
+    const deletedEmp = new Set((tombs || []).filter(t => t.store === 'employees').map(t => t.id));
+    if(!deletedEmp.size) return att;
+    const out = {};
+    Object.keys(att || {}).forEach(date => {
+      const day = {};
+      Object.keys(att[date] || {}).forEach(empId => {
+        // Only drop the day's entry if the worker's deletion is newer than it.
+        const t = (tombs || []).find(x => x.store === 'employees' && x.id === empId);
+        if(t && !(recordStamp(att[date][empId]) > (t.deletedAt || ''))) return;
+        day[empId] = att[date][empId];
+      });
+      if(Object.keys(day).length) out[date] = day;
+    });
+    return out;
+  }
+
+  function mergeRecordArrays(localArr, remoteArr){
+    const byId = new Map();
+    (Array.isArray(localArr) ? localArr : []).forEach(r => { if(r && r.id) byId.set(r.id, r); });
+    (Array.isArray(remoteArr) ? remoteArr : []).forEach(r => {
+      if(!r || !r.id) return;
+      const mine = byId.get(r.id);
+      // Keep whichever version of this specific record was touched last.
+      if(!mine || recordStamp(r) > recordStamp(mine)) byId.set(r.id, r);
+    });
+    return Array.from(byId.values());
+  }
+
+  function mergeAttendance(localAtt, remoteAtt){
+    const out = {};
+    const dates = new Set([...Object.keys(localAtt||{}), ...Object.keys(remoteAtt||{})]);
+    dates.forEach(date => {
+      const l = (localAtt && localAtt[date]) || {};
+      const r = (remoteAtt && remoteAtt[date]) || {};
+      const merged = {};
+      new Set([...Object.keys(l), ...Object.keys(r)]).forEach(empId => {
+        const le = l[empId], re = r[empId];
+        if(le && re) merged[empId] = (recordStamp(re) > recordStamp(le)) ? re : le;
+        else merged[empId] = le || re;
+      });
+      if(Object.keys(merged).length) out[date] = merged;
+    });
+    return out;
+  }
+
+  function mergeSiteData(local, remote){
+    local = local || {}; remote = remote || {};
+    // Tombstones merge first, then filter both sides — so a deletion made on
+    // either device removes the record no matter which copy is "newer".
+    const tombs = pruneTombstones(mergeTombstoneLists(local.tombstones, remote.tombstones));
+    const merged = {
+      employees: mergeRecordArrays(local.employees, remote.employees),
+      attendance: mergeAttendance(local.attendance, remote.attendance),
+      advances: mergeRecordArrays(local.advances, remote.advances),
+      expenses: mergeRecordArrays(local.expenses, remote.expenses),
+      contractors: mergeRecordArrays(local.contractors, remote.contractors),
+      contractorEntries: mergeRecordArrays(local.contractorEntries, remote.contractorEntries),
+    };
+    return {
+      employees: applyTombstones(merged.employees, tombs, 'employees'),
+      attendance: applyAttendanceTombstones(merged.attendance, tombs),
+      advances: applyTombstones(merged.advances, tombs, 'advances'),
+      expenses: applyTombstones(merged.expenses, tombs, 'expenses'),
+      contractors: applyTombstones(merged.contractors, tombs, 'contractors'),
+      contractorEntries: applyTombstones(merged.contractorEntries, tombs, 'contractorEntries'),
+      tombstones: tombs,
+      // Roster is per-month config; union the months, preferring whichever
+      // side actually has a list for that month (last writer wins per month).
+      attendanceRoster: Object.assign({}, local.attendanceRoster || {}, remote.attendanceRoster || {}),
+    };
+  }
+
+  // Writes a merged copy of the remote snapshot into local storage.
+  // Returns true if anything was actually merged in.
+  async function mergeRemoteIntoLocal(remote){
+    if(!remote || !Array.isArray(remote.sites)) return false;
+    // Guard: never let an empty/blank remote wipe out real local data.
+    // A remote with no sites while we have sites locally means the remote
+    // file is empty, truncated, or from a fresh install — not a legitimate
+    // instruction to delete everything.
+    if(remote.sites.length === 0 && sites.length > 0) return false;
+
+    sites = mergeRecordArrays(sites, remote.sites);
+    await kvSet('lc:sites', JSON.stringify(sites));
+
+    const remoteSiteData = remote.siteData || {};
+    for(const id of Object.keys(remoteSiteData)){
+      const localRaw = await loadSiteDataRaw(id);
+      const merged = mergeSiteData(localRaw, remoteSiteData[id]);
+      await kvSet(siteKey(id,'employees'), JSON.stringify(merged.employees));
+      await kvSet(siteKey(id,'attendance'), JSON.stringify(merged.attendance));
+      await kvSet(siteKey(id,'advances'), JSON.stringify(merged.advances));
+      await kvSet(siteKey(id,'expenses'), JSON.stringify(merged.expenses));
+      await kvSet(siteKey(id,'contractors'), JSON.stringify(merged.contractors));
+      await kvSet(siteKey(id,'contractorEntries'), JSON.stringify(merged.contractorEntries));
+      await kvSet(siteKey(id,'tombstones'), JSON.stringify(merged.tombstones));
+      await kvSet(siteKey(id,'attendanceRoster'), JSON.stringify(merged.attendanceRoster));
+    }
+    return true;
+  }
+
+  function refreshAfterSync(){
+    if(currentSiteId){
+      if(sites.find(s => s.id === currentSiteId)){
+        return loadSiteData(currentSiteId).then(() => {
+          renderEmployees(); renderHeaderCount();
+          if(currentTab === 'dashboard') renderDashboard();
+          if(currentTab === 'attendance') renderAttendance();
+          if(currentTab === 'advances') renderAdvances();
+          if(currentTab === 'expenses') renderExpenses();
+          if(currentTab === 'contractors') renderContractors();
+          if(currentTab === 'reports') renderReports();
+        });
+      }
+      backToSites();
+      return Promise.resolve();
+    }
+    renderSitesList();
+    return Promise.resolve();
+  }
+
+  // Reads the current Drive file version without downloading the contents.
+  async function fetchDriveFileVersion(){
+    if(!driveFileId) return null;
+    try{
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?fields=version`, {
+        headers:{ Authorization:`Bearer ${driveToken.access_token}` }
+      });
+      if(!res.ok) return null;
+      const meta = await res.json();
+      return meta && meta.version ? String(meta.version) : null;
+    }catch(e){ return null; }
+  }
+
+  async function downloadDriveSnapshot(){
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+      headers:{ Authorization:`Bearer ${driveToken.access_token}` }
+    });
+    if(!res.ok) throw new Error('download failed');
+    return res.json();
+  }
+
+  // ---------- Versioned Drive backups ----------
+  // Separate snapshot files alongside the live sync file. The live file is
+  // never touched by any of this: backups are additional, and rotation only
+  // ever deletes older *backup* files.
+  const BACKUP_PREFIX = 'Lakhan-Construction-backup-';
+  const BACKUP_KEEP = 10;
+
+  function backupFileName(dateISO){ return `${BACKUP_PREFIX}${dateISO}.json`; }
+
+  async function listBackupFiles(){
+    const q = encodeURIComponent(`name contains '${BACKUP_PREFIX}' and trashed=false`);
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=appDataFolder&fields=files(id,name,createdTime)&pageSize=50`, {
+      headers:{ Authorization:`Bearer ${driveToken.access_token}` }
+    });
+    if(!res.ok) throw new Error('list failed');
+    const data = await res.json();
+    return (data.files || []).sort((a,b) => (b.name || '').localeCompare(a.name || ''));
+  }
+
+  // Creates today's snapshot if one doesn't exist yet. Returns true only if a
+  // backup actually landed in Drive. Never throws to its caller — a backup
+  // problem must not make a successful data sync look failed.
+  async function createDriveBackup(manual){
+    if(!driveConnected) return false;
+    try{
+      const ok = await ensureToken();
+      if(!ok) return false;
+      const today = todayISO();
+      const name = backupFileName(today);
+      const existingId = await findDriveFile(name, 'appDataFolder');
+
+      const siteData = {};
+      for(const s of sites){ siteData[s.id] = await loadSiteDataRaw(s.id); }
+      const payload = JSON.stringify({
+        backupOf: 'lakhan-construction-data.json',
+        backupDate: today,
+        createdAt: new Date().toISOString(),
+        sites, siteData
+      });
+
+      if(existingId){
+        if(!manual){ await kvSet('lc:last_backup', today); return false; } // already have today's
+        const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=media`, {
+          method:'PATCH',
+          headers:{ Authorization:`Bearer ${driveToken.access_token}`, 'Content-Type':'application/json' },
+          body: payload
+        });
+        if(!res.ok) throw new Error('backup update failed');
+      } else {
+        const meta = { name, parents: ['appDataFolder'] };
+        const boundary = 'lc_bkp_' + uid();
+        const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${payload}\r\n--${boundary}--`;
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+          method:'POST',
+          headers:{ Authorization:`Bearer ${driveToken.access_token}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
+          body
+        });
+        if(!res.ok) throw new Error('backup create failed');
+      }
+
+      await kvSet('lc:last_backup', today);
+      await rotateBackups();
+      return true;
+    }catch(e){
+      console.error('Drive backup failed (data sync unaffected):', e);
+      return false;
+    }
+  }
+
+  async function rotateBackups(){
+    try{
+      const files = await listBackupFiles();
+      // Only ever deletes surplus BACKUP files — the live data file has a
+      // different name and is never in this list.
+      const surplus = files.slice(BACKUP_KEEP);
+      for(const f of surplus){
+        if(!f.name || f.name.indexOf(BACKUP_PREFIX) !== 0) continue; // belt & braces
+        await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`, {
+          method:'DELETE', headers:{ Authorization:`Bearer ${driveToken.access_token}` }
+        }).catch(() => {});
+      }
+    }catch(e){ console.error('Backup rotation skipped:', e); }
+  }
+
+  // At most one automatic backup per calendar day, and only after a
+  // successful push — never on a keystroke, never on a poll.
+  async function maybeDailyBackup(){
+    if(!driveConnected) return;
+    try{
+      const last = await kvGet('lc:last_backup');
+      if(last === todayISO()) return;
+      await createDriveBackup(false);
+    }catch(e){ /* backup is best-effort by design */ }
+  }
+
   function queueDriveSync(){
     if(!driveConnected) return;
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => { pushToDrive(); }, 900);
   }
 
-  async function pushToDrive(){
+  // Public entry point. Every caller queues behind any push already in
+  // flight rather than running concurrently, so two rapid saves can never
+  // both create a Drive file or clobber each other mid-upload. Each caller
+  // still gets back a truthful result for its own push.
+  function pushToDrive(){
+    pushChain = pushChain.then(doPushToDrive, doPushToDrive);
+    return pushChain;
+  }
+
+  async function doPushToDrive(){
     if(!driveConnected) return false;
     const ok = await ensureToken();
     if(!ok){ setSyncStatus('offline'); return false; }
     setSyncStatus('syncing');
+    let mergedInConflict = false;
     try{
-      const updatedAt = await kvGet('lc:updated_at');
+      if(!driveFileId) driveFileId = await findDriveFile('lakhan-construction-data.json', 'appDataFolder');
+
+      // --- Conflict detection -------------------------------------------
+      // If the file on Drive has moved on since the version this device
+      // last read/wrote, another device wrote in the meantime. Pull that
+      // work in and merge it with ours BEFORE uploading, so our upload
+      // carries both sides instead of overwriting theirs.
+      if(driveFileId && driveFileVersion !== null){
+        const currentVersion = await fetchDriveFileVersion();
+        if(currentVersion !== null && currentVersion !== driveFileVersion){
+          try{
+            const remote = await downloadDriveSnapshot();
+            const didMerge = await mergeRemoteIntoLocal(remote);
+            if(didMerge){
+              mergedInConflict = true;
+              await refreshAfterSync();
+            }
+          }catch(e){
+            // Couldn't read the other device's data — refuse to overwrite
+            // it blindly. Better to retry later than to destroy their work.
+            console.error('Drive conflict read failed; aborting push to avoid overwrite:', e);
+            setSyncStatus('offline');
+            return false;
+          }
+        }
+      }
+
+      const updatedAt = new Date().toISOString();
       const siteData = {};
       for(const s of sites){ siteData[s.id] = await loadSiteDataRaw(s.id); }
-      const payload = JSON.stringify({ sites, siteData, updatedAt: updatedAt || new Date().toISOString() });
-      if(!driveFileId) driveFileId = await findDriveFile('lakhan-construction-data.json', 'appDataFolder');
+      const payload = JSON.stringify({ sites, siteData, updatedAt });
+
+      let newVersion = null;
       if(!driveFileId){
         const meta = { name: 'lakhan-construction-data.json', parents: ['appDataFolder'] };
         const boundary = 'lc_boundary_' + uid();
         const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${payload}\r\n--${boundary}--`;
-        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,version', {
           method:'POST',
           headers:{ Authorization:`Bearer ${driveToken.access_token}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
           body
@@ -1928,17 +2492,38 @@
         if(!res.ok) throw new Error('create failed');
         const data = await res.json();
         driveFileId = data.id;
+        newVersion = data.version ? String(data.version) : null;
       } else {
-        const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+        const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media&fields=version`, {
           method:'PATCH',
           headers:{ Authorization:`Bearer ${driveToken.access_token}`, 'Content-Type':'application/json' },
           body: payload
         });
         if(!res.ok) throw new Error('update failed');
+        const data = await res.json().catch(() => null);
+        newVersion = data && data.version ? String(data.version) : null;
       }
+
+      // Only now — after the upload actually succeeded — do we record the
+      // new baseline. If anything above threw, driveFileVersion stays at
+      // the old value so the next attempt still sees the conflict.
+      await kvSet('lc:updated_at', updatedAt);
+      driveFileVersion = newVersion !== null ? newVersion : await fetchDriveFileVersion();
       setSyncStatus('synced');
+      await kvSet('lc:last_synced', new Date().toISOString());
+      // Fire-and-forget: a backup failure must never turn a successful data
+      // sync into a reported failure, so it is not awaited and cannot throw
+      // into this function's result.
+      maybeDailyBackup();
+      if(mergedInConflict){
+        toast('Merged changes from another device — please double-check today\'s entries');
+      }
       return true;
-    }catch(e){ console.error('Drive push failed:', e); setSyncStatus('offline'); return false; }
+    }catch(e){
+      console.error('Drive push failed:', e);
+      setSyncStatus('offline');
+      return false;
+    }
   }
 
   // Force an immediate push (bypassing the debounce) right after an explicit
@@ -1953,47 +2538,43 @@
   async function pullFromDrive(silent){
     if(!driveConnected) return;
     const ok = await ensureToken();
-    if(!ok) return;
+    if(!ok){ setSyncStatus('offline'); return; }
     try{
       if(!driveFileId) driveFileId = await findDriveFile('lakhan-construction-data.json', 'appDataFolder');
       if(!driveFileId) return;
-      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
-        headers:{ Authorization:`Bearer ${driveToken.access_token}` }
-      });
-      if(!res.ok) return;
-      const remote = await res.json();
-      const localUpdated = await kvGet('lc:updated_at');
-      if(remote && remote.updatedAt && (!localUpdated || remote.updatedAt > localUpdated)){
-        sites = remote.sites || [];
-        await kvSet('lc:sites', JSON.stringify(sites));
-        const siteData = remote.siteData || {};
-        for(const id of Object.keys(siteData)){
-          await kvSet(siteKey(id,'employees'), JSON.stringify(siteData[id].employees || []));
-          await kvSet(siteKey(id,'attendance'), JSON.stringify(siteData[id].attendance || {}));
-          await kvSet(siteKey(id,'advances'), JSON.stringify(siteData[id].advances || []));
-          await kvSet(siteKey(id,'expenses'), JSON.stringify(siteData[id].expenses || []));
-          await kvSet(siteKey(id,'contractors'), JSON.stringify(siteData[id].contractors || []));
-          await kvSet(siteKey(id,'contractorEntries'), JSON.stringify(siteData[id].contractorEntries || []));
-        }
-        await kvSet('lc:updated_at', remote.updatedAt);
-        if(currentSiteId){
-          if(sites.find(s => s.id === currentSiteId)){
-            await loadSiteData(currentSiteId);
-            renderEmployees(); renderHeaderCount();
-            if(currentTab === 'attendance') renderAttendance();
-            if(currentTab === 'advances') renderAdvances();
-            if(currentTab === 'expenses') renderExpenses();
-            if(currentTab === 'reports') renderReports();
-          } else {
-            backToSites();
-          }
-        } else {
-          renderSitesList();
-        }
-        if(!silent) toast('Pulled the latest data from Drive');
-        setSyncStatus('synced', 'Updated just now from another device');
+
+      // Cheap check first: if Drive's version counter hasn't moved since we
+      // last read or wrote, there is nothing new to fetch.
+      const currentVersion = await fetchDriveFileVersion();
+      if(currentVersion !== null && currentVersion === driveFileVersion) return;
+
+      const remote = await downloadDriveSnapshot();
+      if(!remote || !Array.isArray(remote.sites)) return;
+
+      // Never let a blank remote erase real local data (see mergeRemoteIntoLocal).
+      if(remote.sites.length === 0 && sites.length > 0){
+        console.warn('Ignored an empty Drive snapshot to protect local data.');
+        if(!silent) toast('Drive backup looks empty — keeping this device\'s data');
+        return;
       }
-    }catch(e){ /* ignore, keep local */ }
+
+      // Merge rather than overwrite: local edits made since the last sync
+      // survive alongside whatever the other device added.
+      const didMerge = await mergeRemoteIntoLocal(remote);
+      if(!didMerge) return;
+
+      await kvSet('lc:updated_at', new Date().toISOString());
+      driveFileVersion = currentVersion;
+      await refreshAfterSync();
+      if(!silent) toast('Pulled the latest data from Drive');
+      setSyncStatus('synced', 'Updated just now from another device');
+    }catch(e){
+      // Keep local data; surface that sync isn't currently working rather
+      // than failing silently.
+      console.error('Drive pull failed:', e);
+      setSyncStatus('offline');
+      if(!silent) toast('Could not reach Drive — your data is safe on this device');
+    }
   }
 
   // ---------- Live sync: keep devices in step without a manual refresh ----------
@@ -2344,6 +2925,7 @@
     const ok = await ensureToken();
     if(!ok){ toast('Reconnect Google Drive to continue'); return; }
     if(!currentSiteId){ toast('Open a site first'); return; }
+    if(!window.XLSX && !(await ensureXLSX())){ toast('Could not load the Excel library — check your connection'); return; }
     const site = sites.find(s => s.id === currentSiteId);
     const fileName = `Lakhan_${(site ? site.name : 'Site').replace(/\s+/g,'_')}_Register.xlsx`;
     setSyncStatus('syncing');
@@ -2376,7 +2958,83 @@
     }catch(e){ setSyncStatus('offline'); toast('Could not reach Drive — try again'); }
   }
 
-  document.getElementById('syncPill').addEventListener('click', openSettingsModal);
+  function openBackupSyncModal(){
+    const modal = document.getElementById('modalContent');
+    modal.innerHTML = `
+      <div class="modal-head">
+        <h3>Backup &amp; Sync</h3>
+        <button class="close" id="closeModal" aria-label="Close">✕</button>
+      </div>
+      <div class="card-block summary-list" id="bsInfo">
+        <div class="srow"><span>Status</span><b id="bsStatus">…</b></div>
+        <div class="srow"><span>Last synced</span><b id="bsSynced">…</b></div>
+        <div class="srow"><span>Last backup</span><b id="bsBackup">…</b></div>
+      </div>
+      <button class="btn-primary" id="bsSyncNow">Sync now</button>
+      <button class="btn-outline" id="bsBackupNow">Back up now</button>
+      <button class="btn-outline" id="bsViewBackups">View backups</button>
+      <div id="bsBackupList"></div>
+      <p class="field-hint" style="margin-top:12px;">Backups are separate daily snapshots in your Google Drive app folder. The live sync file is never replaced by them. Restoring from a backup isn't available in the app yet.</p>
+    `;
+    showOverlay();
+    document.getElementById('closeModal').addEventListener('click', closeOverlay);
+
+    const fmt = (iso) => {
+      if(!iso) return 'Never';
+      try{ return new Date(iso).toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' }); }
+      catch(e){ return iso; }
+    };
+    (async () => {
+      const statusEl = document.getElementById('bsStatus');
+      if(statusEl) statusEl.textContent = driveConnected
+        ? (document.getElementById('syncPillText') || {}).textContent || 'Connected'
+        : 'Not connected to Drive';
+      const s = await kvGet('lc:last_synced').catch(() => null);
+      const b = await kvGet('lc:last_backup').catch(() => null);
+      const se = document.getElementById('bsSynced'); if(se) se.textContent = fmt(s);
+      const be = document.getElementById('bsBackup'); if(be) be.textContent = b ? b : 'Never';
+    })();
+
+    document.getElementById('bsSyncNow').addEventListener('click', async () => {
+      if(!driveConnected){ toast('Connect Google Drive first (⚙ Settings)'); return; }
+      toast('Syncing…');
+      const ok = await pushToDrive();
+      toast(ok ? 'Synced to Drive' : 'Sync failed — your data is safe on this device');
+    });
+
+    document.getElementById('bsBackupNow').addEventListener('click', async () => {
+      if(!driveConnected){ toast('Connect Google Drive first (⚙ Settings)'); return; }
+      toast('Creating backup…');
+      const ok = await createDriveBackup(true);
+      if(ok){
+        const be = document.getElementById('bsBackup');
+        if(be) be.textContent = todayISO();
+        toast('Backup saved to Drive');
+      } else {
+        toast('Backup failed — your data and sync are unaffected');
+      }
+    });
+
+    document.getElementById('bsViewBackups').addEventListener('click', async () => {
+      const box = document.getElementById('bsBackupList');
+      if(!driveConnected){ toast('Connect Google Drive first (⚙ Settings)'); return; }
+      box.innerHTML = '<p class="field-hint">Loading…</p>';
+      try{
+        const ok = await ensureToken();
+        if(!ok) throw new Error('no token');
+        const files = await listBackupFiles();
+        box.innerHTML = files.length
+          ? `<div class="eyebrow" style="margin-top:14px;">Backups in Drive</div><div class="card-block summary-list">${
+              files.map(f => `<div class="srow"><span>${escapeHtml((f.name||'').replace(BACKUP_PREFIX,'').replace('.json',''))}</span><b>${escapeHtml(f.createdTime ? new Date(f.createdTime).toLocaleDateString('en-IN') : '')}</b></div>`).join('')
+            }</div>`
+          : '<p class="field-hint" style="margin-top:12px;">No backups yet — tap “Back up now”.</p>';
+      }catch(e){
+        box.innerHTML = '<p class="field-hint" style="margin-top:12px;">Could not list backups — check your connection.</p>';
+      }
+    });
+  }
+
+  document.getElementById('syncPill').addEventListener('click', openBackupSyncModal);
   document.getElementById('driveExcelBtn').addEventListener('click', pushExcelToDrive);
   document.getElementById('openSettingsFromBackupBtn').addEventListener('click', openSettingsModal);
 
@@ -2387,6 +3045,8 @@
     document.getElementById('panel-' + tab).classList.add('active');
     document.querySelectorAll('.bottomnav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     document.getElementById('fabBtn').style.display = (tab === 'employees' || tab === 'advances' || tab === 'expenses' || tab === 'contractors') ? 'flex' : 'none';
+    const fabLabels = { employees:'Add worker', advances:'Log advance', expenses:'Log expense', contractors:'Add contractor entry' };
+    document.getElementById('fabBtn').setAttribute('aria-label', fabLabels[tab] || 'Quick add');
     if(tab === 'dashboard') renderDashboard();
     if(tab === 'employees') renderEmployees();
     if(tab === 'attendance') renderAttendance();
@@ -2472,25 +3132,28 @@
     const emp = id ? employees.find(e => e.id === id) : null;
     const modal = document.getElementById('modalContent');
     modal.innerHTML = `
-      <button class="close" id="closeModal">✕</button>
+      <button class="close" id="closeModal" aria-label="Close">✕</button>
       <h2>${emp ? 'Edit Worker' : 'Add Worker'}</h2>
-      <div class="field"><label>Full Name *</label><input type="text" id="f_name" value="${emp ? escapeAttr(emp.name) : ''}" placeholder="e.g. Ramesh Kumar" /></div>
-      <div class="field"><label>Phone Number *</label><input type="tel" id="f_phone" value="${emp ? escapeAttr(emp.phone) : ''}" placeholder="e.g. 98765 43210" /></div>
-      <div class="field"><label>Role / Trade</label><input type="text" id="f_role" value="${emp ? escapeAttr(emp.role||'') : ''}" placeholder="e.g. Mason, Helper, Electrician" /></div>
-      <div class="field"><label>Address</label><textarea id="f_address" placeholder="Village / area, district">${emp ? escapeAttr(emp.address||'') : ''}</textarea></div>
-      <div class="field"><label>Daily Wage (₹)</label><input type="number" id="f_wage" value="${emp ? emp.wage||'' : ''}" placeholder="e.g. 600" /></div>
+      <div class="field"><label for="f_name">Full Name *</label><input type="text" id="f_name" value="${emp ? escapeAttr(emp.name) : ''}" placeholder="e.g. Ramesh Kumar" /></div>
+      <div class="field"><label for="f_phone">Phone Number *</label><input type="tel" id="f_phone" value="${emp ? escapeAttr(emp.phone) : ''}" placeholder="e.g. 98765 43210" /></div>
+      <div class="field"><label for="f_role">Role / Trade</label><input type="text" id="f_role" value="${emp ? escapeAttr(emp.role||'') : ''}" placeholder="e.g. Mason, Helper, Electrician" /></div>
+      <div class="field"><label for="f_address">Address</label><textarea id="f_address" placeholder="Village / area, district">${emp ? escapeAttr(emp.address||'') : ''}</textarea></div>
+      <div class="field"><label for="f_wage">Daily Wage (₹)</label><input type="number" id="f_wage" value="${emp ? emp.wage||'' : ''}" placeholder="e.g. 600" /></div>
       <div class="field">
-        <label>Overtime Rate per Hour (₹)</label>
+        <label for="f_otrate">Overtime Rate per Hour (₹)</label>
         <input type="number" id="f_otrate" value="${emp && emp.otRate ? emp.otRate : ''}" placeholder="Auto: daily wage ÷ 8" />
         <div class="field-hint">Leave blank to auto-calculate from the daily wage.</div>
       </div>
-      <div class="field"><label>Joining Date</label><input type="date" id="f_join" value="${emp ? (emp.joinDate||'') : todayISO()}" /></div>
+      <div class="field"><label for="f_join">Joining Date</label><input type="date" id="f_join" value="${emp ? escapeAttr(emp.joinDate||'') : todayISO()}" /></div>
       <button class="btn-primary" id="saveEmpBtn">${emp ? 'Save Changes' : 'Add Worker'}</button>
-      ${emp ? '<button class="btn-danger" style="width:100%;margin-top:8px;padding:12px;" id="deleteEmpBtn">Remove Worker</button>' : ''}
+      ${emp && !isEmployeeActive(emp) ? '<button class="btn-outline" style="width:100%;margin-top:8px;" id="reactivateEmpBtn">↺ Reactivate Worker</button>' : ''}
+      ${emp ? `<button class="btn-danger" style="width:100%;margin-top:8px;padding:12px;" id="deleteEmpBtn">${employeeHasHistory(emp.id) ? 'Archive Worker' : 'Remove Worker'}</button>` : ''}
     `;
     showOverlay();
     document.getElementById('closeModal').addEventListener('click', closeOverlay);
     document.getElementById('saveEmpBtn').addEventListener('click', saveEmployeeFromForm);
+    const reBtn = document.getElementById('reactivateEmpBtn');
+    if(reBtn) reBtn.addEventListener('click', () => reactivateEmployee(emp));
     const delBtn = document.getElementById('deleteEmpBtn');
     if(delBtn) delBtn.addEventListener('click', () => confirmDeleteEmployee(emp));
   }
@@ -2498,15 +3161,25 @@
   async function saveEmployeeFromForm(){
     const name = document.getElementById('f_name').value.trim();
     const phone = document.getElementById('f_phone').value.trim();
-    if(!name || !phone){ toast('Name and phone are required'); return; }
-    const data = {
-      name, phone,
-      role: document.getElementById('f_role').value.trim(),
-      address: document.getElementById('f_address').value.trim(),
-      wage: document.getElementById('f_wage').value ? Number(document.getElementById('f_wage').value) : null,
-      otRate: document.getElementById('f_otrate').value ? Number(document.getElementById('f_otrate').value) : null,
-      joinDate: document.getElementById('f_join').value || todayISO(),
-    };
+    if(!isValidRequiredText(name)){ toast(name ? 'Name is too long' : 'Name is required'); return; }
+    if(!isValidPhone(phone)){ toast('Enter a valid phone number'); return; }
+
+    const role = document.getElementById('f_role').value.trim();
+    const address = document.getElementById('f_address').value.trim();
+    if(!isValidOptionalText(role)){ toast('Role is too long'); return; }
+    if(!isValidOptionalText(address, 300)){ toast('Address is too long'); return; }
+
+    const wageRaw = document.getElementById('f_wage').value;
+    const otRateRaw = document.getElementById('f_otrate').value;
+    const wage = wageRaw ? Number(wageRaw) : null;
+    const otRate = otRateRaw ? Number(otRateRaw) : null;
+    if(wage !== null && !isValidNumber(wage)){ toast('Daily wage must be a valid number, 0 or more'); return; }
+    if(otRate !== null && !isValidNumber(otRate)){ toast('Overtime rate must be a valid number, 0 or more'); return; }
+
+    const joinDate = document.getElementById('f_join').value || todayISO();
+    if(!isValidDateString(joinDate)){ toast('Enter a valid joining date'); return; }
+
+    const data = { name, phone, role, address, wage, otRate, joinDate };
     if(editingEmpId){
       const emp = employees.find(e => e.id === editingEmpId);
       Object.assign(emp, data);
@@ -2526,14 +3199,40 @@
     }
   }
 
+  // Verifies a password against the server (never compared in the browser).
+  // Returns true/false, or throws-free 'error' string on network/config issues.
+  async function checkPasswordServerSide(password){
+    try{
+      const res = await fetch('/api/verify-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if(res.ok) return { ok: true };
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, error: data.error || 'invalid_password', status: res.status };
+    }catch(e){
+      return { ok: false, error: 'network' };
+    }
+  }
+
+  function passwordErrorMessage(result){
+    if(result.error === 'too_many_attempts') return 'Too many attempts — please wait a few minutes and try again.';
+    if(result.error === 'server_not_configured') return 'Server isn\'t set up yet — add APP_PASSWORD and SESSION_SECRET in Vercel.';
+    if(result.error === 'not_authenticated') return 'Your session expired — please log out and log back in.';
+    if(result.error === 'server_error') return 'Something went wrong on the server — please try again.';
+    if(result.error === 'network') return 'Could not reach the server — check your connection.';
+    return 'Incorrect password. Try again.';
+  }
+
   function confirmPasswordAction(opts){
     const { title, message, confirmLabel, onConfirm } = opts;
     const modal = document.getElementById('modalContent');
     modal.innerHTML = `
-      <button class="close" id="closeModal">✕</button>
+      <button class="close" id="closeModal" aria-label="Close">✕</button>
       <h2>${title}</h2>
       <p class="danger-hint">${message}</p>
-      <div class="field"><label>Password</label><input type="password" id="pwConfirmInput" placeholder="Enter password" autocomplete="off" /></div>
+      <div class="field"><label for="pwConfirmInput">Password</label><input type="password" id="pwConfirmInput" placeholder="Enter password" autocomplete="off" /></div>
       <p class="login-error" id="pwConfirmError" style="margin-top:-8px;">Incorrect password. Try again.</p>
       <button class="btn-danger" style="width:100%;padding:13px;" id="pwConfirmBtn">${confirmLabel}</button>
       <button class="btn-ghost" style="width:100%;padding:13px;margin-top:8px;" id="pwCancelBtn">Cancel</button>
@@ -2543,9 +3242,14 @@
     document.getElementById('pwCancelBtn').addEventListener('click', closeOverlay);
     const pwInput = document.getElementById('pwConfirmInput');
     const errEl = document.getElementById('pwConfirmError');
+    const confirmBtn = document.getElementById('pwConfirmBtn');
     setTimeout(() => pwInput.focus(), 150);
     async function attempt(){
-      if(pwInput.value !== APP_PASSWORD){
+      confirmBtn.disabled = true;
+      const result = await checkPasswordServerSide(pwInput.value);
+      confirmBtn.disabled = false;
+      if(!result.ok){
+        errEl.textContent = passwordErrorMessage(result);
         errEl.style.display = 'block';
         pwInput.value = '';
         pwInput.focus();
@@ -2554,27 +3258,142 @@
       closeOverlay();
       await onConfirm();
     }
-    document.getElementById('pwConfirmBtn').addEventListener('click', attempt);
+    confirmBtn.addEventListener('click', attempt);
     pwInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') attempt(); });
   }
 
+  // ---------- Employee lifecycle: archive instead of destroy ----------
+  // Backward compatible by design: employees saved before this change have no
+  // `active` field, and `active !== false` treats them as active. Nothing is
+  // migrated or rewritten on load.
+  function isEmployeeActive(emp){ return !emp || emp.active !== false; }
+
+  function employeeHasHistory(empId){
+    if(advances.some(a => a.empId === empId)) return true;
+    return Object.keys(attendance).some(date => attendance[date] && attendance[date][empId]);
+  }
+
+  async function archiveEmployee(emp){
+    emp.active = false;
+    emp.archivedAt = new Date().toISOString();
+    emp.updatedAt = emp.archivedAt;
+    await saveEmployees();
+    closeOverlay();
+    renderEmployees();
+    await saveAndSyncToast(`${emp.name} archived — history kept`);
+  }
+
+  async function reactivateEmployee(emp){
+    emp.active = true;
+    emp.archivedAt = null;
+    emp.updatedAt = new Date().toISOString();
+    await saveEmployees();
+    closeOverlay();
+    renderEmployees();
+    await saveAndSyncToast(`${emp.name} reactivated`);
+  }
+
   function confirmDeleteEmployee(emp){
+    // A worker with any attendance or advance history is NEVER hard-deleted —
+    // doing so would silently destroy past months' payroll records. They are
+    // archived instead: same ID, all history intact, just excluded from new
+    // months by default and restorable later.
+    if(employeeHasHistory(emp.id)){
+      confirmPasswordAction({
+        title: 'Archive Worker?',
+        message: `<b>${escapeHtml(emp.name)}</b> has attendance or advance history, so their records are kept. They'll be marked <b>Archived</b>: their past months stay exactly as they are, they won't be added to new months automatically, and you can reactivate them any time. Enter the password to confirm.`,
+        confirmLabel: 'Archive Worker',
+        onConfirm: () => archiveEmployee(emp)
+      });
+      return;
+    }
+    // No history at all — safe to remove outright, with a tombstone so the
+    // deletion isn't undone by an older copy on another device.
     confirmPasswordAction({
       title: 'Remove Worker?',
-      message: `This permanently removes <b>${escapeHtml(emp.name)}</b>, along with all of their attendance and advance records. This can't be undone. Enter the password to confirm.`,
-      confirmLabel: 'Remove Worker Permanently',
+      message: `<b>${escapeHtml(emp.name)}</b> has no attendance or advance records yet, so they can be removed completely. Enter the password to confirm.`,
+      confirmLabel: 'Remove Worker',
       onConfirm: async () => {
+        addTombstone('employees', emp.id);
         employees = employees.filter(e => e.id !== emp.id);
-        advances = advances.filter(a => a.empId !== emp.id);
-        Object.keys(attendance).forEach(date => {
-          if(attendance[date] && attendance[date][emp.id]) delete attendance[date][emp.id];
-        });
         await saveEmployees();
-        await saveAdvances();
-        await saveAttendance();
+        await saveTombstones();
+        closeOverlay();
         renderEmployees();
-        await saveAndSyncToast('Worker and their records removed');
+        await saveAndSyncToast('Worker removed');
       }
+    });
+  }
+
+  // ---------- Month-specific attendance roster ----------
+  // Membership is per month and stored separately from attendance records,
+  // so no historical attendance is ever rewritten. A month with existing
+  // attendance but no saved roster keeps showing exactly who it always
+  // showed (derived, not saved) — that's what stops this change from hiding
+  // past data.
+  function derivedRosterForMonth(ym){
+    const withData = new Set();
+    Object.keys(attendance).forEach(date => {
+      if(!date.startsWith(ym)) return;
+      Object.keys(attendance[date] || {}).forEach(id => withData.add(id));
+    });
+    const ids = employees.filter(e => isEmployeeActive(e)).map(e => e.id);
+    withData.forEach(id => { if(!ids.includes(id)) ids.push(id); });
+    return ids;
+  }
+
+  function monthHasAttendanceData(ym){
+    return Object.keys(attendance).some(date => date.startsWith(ym) && Object.keys(attendance[date] || {}).length);
+  }
+
+  function rosterForMonth(ym){
+    if(Array.isArray(attendanceRoster[ym])) return attendanceRoster[ym];
+    return derivedRosterForMonth(ym);
+  }
+
+  function isRosterConfigured(ym){ return Array.isArray(attendanceRoster[ym]); }
+
+  function openRosterModal(ym){
+    const current = new Set(rosterForMonth(ym));
+    const label = new Date(ym + '-01T00:00:00').toLocaleString('en-IN', { month:'long', year:'numeric' });
+    const modal = document.getElementById('modalContent');
+    const rows = employees.slice().sort((a,b) => a.name.localeCompare(b.name)).map(e => {
+      const archived = !isEmployeeActive(e);
+      return `<label class="roster-row">
+        <input type="checkbox" class="roster-cb" data-id="${escapeAttr(e.id)}" ${current.has(e.id) ? 'checked' : ''} />
+        <span class="roster-name">${escapeHtml(e.name)}</span>
+        ${archived ? '<span class="chip grey">Archived</span>' : ''}
+      </label>`;
+    }).join('');
+    modal.innerHTML = `
+      <div class="modal-head">
+        <h3>Workers for ${escapeHtml(label)}</h3>
+        <button class="close" id="closeModal" aria-label="Close">✕</button>
+      </div>
+      <p class="field-hint" style="margin:0 0 12px;">Tick who should appear in this month's attendance. Past months aren't affected, and anyone you untick keeps all their existing records.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn-ghost" id="rosterAll" style="flex:1;">Select all</button>
+        <button class="btn-ghost" id="rosterActive" style="flex:1;">Active only</button>
+        <button class="btn-ghost" id="rosterNone" style="flex:1;">Clear all</button>
+      </div>
+      <div id="rosterList" style="max-height:46vh;overflow-y:auto;">${rows || '<p class="field-hint">No workers yet.</p>'}</div>
+      <button class="btn-primary" id="saveRosterBtn" style="margin-top:14px;">Save roster</button>
+    `;
+    showOverlay();
+    document.getElementById('closeModal').addEventListener('click', closeOverlay);
+    const cbs = () => Array.from(modal.querySelectorAll('.roster-cb'));
+    document.getElementById('rosterAll').addEventListener('click', () => cbs().forEach(c => { c.checked = true; }));
+    document.getElementById('rosterNone').addEventListener('click', () => cbs().forEach(c => { c.checked = false; }));
+    document.getElementById('rosterActive').addEventListener('click', () => cbs().forEach(c => {
+      const emp = employees.find(e => e.id === c.dataset.id);
+      c.checked = isEmployeeActive(emp);
+    }));
+    document.getElementById('saveRosterBtn').addEventListener('click', async () => {
+      attendanceRoster[ym] = cbs().filter(c => c.checked).map(c => c.dataset.id);
+      await saveAttendanceRoster();
+      closeOverlay();
+      renderAttendance();
+      await saveAndSyncToast('Month roster saved');
     });
   }
 
@@ -2592,13 +3411,19 @@
       return;
     }
 
+    // Only this month's roster is shown/counted. Historical months keep
+    // their own membership, so past data never disappears.
+    const ym = date.slice(0,7);
+    const rosterIds = rosterForMonth(ym);
+    const monthEmployees = employees.filter(e => rosterIds.includes(e.id));
+
     let pC=0, aC=0, hC=0, otTotal=0;
-    employees.forEach(e => {
+    monthEmployees.forEach(e => {
       const entry = getDayEntry(date, e.id);
       if(entry.status === 'P') pC++; else if(entry.status === 'A') aC++; else if(entry.status === 'H') hC++;
       otTotal += entry.ot || 0;
     });
-    const unmarked = employees.length - pC - aC - hC;
+    const unmarked = monthEmployees.length - pC - aC - hC;
     document.getElementById('attSummary').innerHTML = `
       <span class="chip green">Present <b>${pC}</b></span>
       <span class="chip red">Absent <b>${aC}</b></span>
@@ -2615,13 +3440,30 @@
       return a.name.localeCompare(b.name);
     });
 
+    const monthLabel = new Date(ym + '-01T00:00:00').toLocaleString('en-IN', { month:'long', year:'numeric' });
+    const rosterBar = document.getElementById('attRosterBar');
+    if(rosterBar){
+      const configured = isRosterConfigured(ym);
+      rosterBar.innerHTML = `
+        <div class="roster-bar${configured || monthHasAttendanceData(ym) ? '' : ' unset'}">
+          <div>
+            <p class="rb-title">${escapeHtml(monthLabel)} — ${monthEmployees.length} worker${monthEmployees.length===1?'':'s'}</p>
+            <p class="rb-sub">${configured ? 'Roster set for this month' : (monthHasAttendanceData(ym) ? 'Using everyone already recorded this month' : 'Not set up yet — active workers shown by default')}</p>
+          </div>
+          <button class="btn-ghost" id="manageRosterBtn">Manage</button>
+        </div>`;
+      const mb = document.getElementById('manageRosterBtn');
+      if(mb) mb.addEventListener('click', () => openRosterModal(ym));
+    }
+
     list.innerHTML = filtered.map(e => {
       const entry = getDayEntry(date, e.id);
+      const archived = !isEmployeeActive(e);
       return `
         <div class="att-row" data-id="${e.id}">
           <div class="top-row">
             <div class="info">
-              <p class="name">${escapeHtml(e.name)}</p>
+              <p class="name">${escapeHtml(e.name)}${archived ? ' <span class="chip grey">Archived</span>' : ''}</p>
               <p class="meta">${escapeHtml(e.role || 'Worker')}</p>
             </div>
             <div class="stamp-group">
@@ -2654,7 +3496,17 @@
       inp.addEventListener('change', async () => {
         const row = inp.closest('.att-row');
         const empId = row.dataset.id;
-        const val = Math.max(0, Number(inp.value) || 0);
+        const raw = inp.value.trim();
+        let val = 0;
+        if(raw !== ''){
+          const num = Number(raw);
+          if(!isValidNumber(num)){
+            toast('Overtime hours must be a valid number, 0 or more');
+            inp.value = getDayEntry(date, empId).ot || '';
+            return;
+          }
+          val = num;
+        }
         setDayEntry(date, empId, { ot: val });
         await saveAttendance();
         renderAttendance();
@@ -2698,11 +3550,11 @@
         <div>
           <p class="name">${escapeHtml(emp ? emp.name : 'Removed worker')}</p>
           ${a.note ? `<p class="note">${escapeHtml(a.note)}</p>` : ''}
-          <p class="date">${a.date}</p>
+          <p class="date">${escapeHtml(a.date)}</p>
         </div>
         <div style="text-align:right;">
           <div class="amt">₹${Number(a.amount||0).toLocaleString('en-IN')}</div>
-          <button class="del" data-id="${a.id}" title="Delete entry">✕</button>
+          <button class="del" data-id="${a.id}" title="Delete entry" aria-label="Delete entry">✕</button>
         </div>
       </div>`;
   }
@@ -2717,8 +3569,10 @@
           message: 'This permanently deletes this advance entry. This can\'t be undone. Enter the password to confirm.',
           confirmLabel: 'Delete Entry',
           onConfirm: async () => {
+            addTombstone('advances', id);
             advances = advances.filter(a => a.id !== id);
             await saveAdvances();
+            await saveTombstones();
             renderEmployees();
             afterDelete();
             await saveAndSyncToast('Entry deleted');
@@ -2888,7 +3742,9 @@
     const date = document.getElementById('advDate').value || todayISO();
     const note = document.getElementById('advNote').value.trim();
     if(!empId){ toast('Add a worker first'); return; }
-    if(!amount || amount <= 0){ toast('Enter a valid amount'); return; }
+    if(!isValidNumber(amount, { allowZero: false })){ toast('Enter a valid amount greater than 0'); return; }
+    if(!isValidDateString(date)){ toast('Enter a valid date'); return; }
+    if(!isValidOptionalText(note)){ toast('Note is too long'); return; }
     advances.push({ id: uid(), empId, amount, date, note, createdAt: new Date().toISOString() });
     await saveAdvances();
     document.getElementById('advAmount').value = '';
@@ -2915,11 +3771,11 @@
           <p class="name">${title}</p>
           ${subtitle ? `<p class="note">${subtitle}</p>` : ''}
           ${x.note ? `<p class="note">${escapeHtml(x.note)}</p>` : ''}
-          <p class="date">${x.date}</p>
+          <p class="date">${escapeHtml(x.date)}</p>
         </div>
         <div style="text-align:right;">
           <div class="amt">₹${Number(x.amount||0).toLocaleString('en-IN')}</div>
-          <button class="del" data-id="${x.id}" title="Delete entry">✕</button>
+          <button class="del" data-id="${x.id}" title="Delete entry" aria-label="Delete entry">✕</button>
         </div>
       </div>`;
   }
@@ -2934,8 +3790,10 @@
           message: 'This permanently deletes this expense entry. This can\'t be undone. Enter the password to confirm.',
           confirmLabel: 'Delete Entry',
           onConfirm: async () => {
+            addTombstone('expenses', id);
             expenses = expenses.filter(x => x.id !== id);
             await saveExpenses();
+            await saveTombstones();
             renderExpenses();
             await saveAndSyncToast('Entry deleted');
           }
@@ -3010,11 +3868,14 @@
 
   document.getElementById('addExpenseBtn').addEventListener('click', async () => {
     const payee = document.getElementById('expPayee').value.trim();
-    const category = document.getElementById('expCategory').value || 'Other';
+    const category = EXPENSE_CATEGORIES.includes(document.getElementById('expCategory').value) ? document.getElementById('expCategory').value : 'Other';
     const amount = Number(document.getElementById('expAmount').value);
     const date = document.getElementById('expDate').value || todayISO();
     const note = document.getElementById('expNote').value.trim();
-    if(!amount || amount <= 0){ toast('Enter a valid amount'); return; }
+    if(!isValidOptionalText(payee)){ toast('Paid To is too long'); return; }
+    if(!isValidNumber(amount, { allowZero: false })){ toast('Enter a valid amount greater than 0'); return; }
+    if(!isValidDateString(date)){ toast('Enter a valid date'); return; }
+    if(!isValidOptionalText(note)){ toast('Note is too long'); return; }
     expenses.push({ id: uid(), payee, category, amount, date, note, createdAt: new Date().toISOString() });
     await saveExpenses();
     document.getElementById('expPayee').value = '';
@@ -3147,7 +4008,7 @@
     return `
       <div class="adv-entry" data-id="${x.id}">
         <div>
-          <p class="name" style="margin:0 0 4px;">${x.date}</p>
+          <p class="name" style="margin:0 0 4px;">${escapeHtml(x.date)}</p>
           ${qty > 0 ? `<p class="note">Work done: ${qty} ${escapeHtml(unit)} × ₹${rate} = ₹${workValue.toLocaleString('en-IN')}</p>` : ''}
           ${advance > 0 ? `<p class="note">Advance given: ₹${advance.toLocaleString('en-IN')}</p>` : ''}
           ${x.comment ? `<p class="note">${escapeHtml(x.comment)}</p>` : ''}
@@ -3155,7 +4016,7 @@
         <div style="text-align:right;">
           <div class="amt">₹${displayAmt.toLocaleString('en-IN')}</div>
           ${displayLabel ? `<div class="date">${displayLabel}</div>` : ''}
-          <button class="del" data-id="${x.id}" title="Delete entry">✕</button>
+          <button class="del" data-id="${x.id}" title="Delete entry" aria-label="Delete entry">✕</button>
         </div>
       </div>`;
   }
@@ -3252,8 +4113,10 @@
           message: 'This permanently deletes this work/advance entry. This can\'t be undone. Enter the password to confirm.',
           confirmLabel: 'Delete Entry',
           onConfirm: async () => {
+            addTombstone('contractorEntries', id);
             contractorEntries = contractorEntries.filter(x => x.id !== id);
             await saveContractorEntries();
+            await saveTombstones();
             renderContractorProfile();
             await saveAndSyncToast('Entry deleted');
           }
@@ -3289,11 +4152,15 @@
   document.getElementById('addContractorBtn').addEventListener('click', async () => {
     const name = document.getElementById('conName').value.trim();
     const phone = document.getElementById('conPhone').value.trim();
-    const category = document.getElementById('conCategory').value || 'Other';
-    const rate = Number(document.getElementById('conRate').value) || 0;
-    const rateUnit = document.getElementById('conRateUnit').value || 'Per Day';
+    const category = CONTRACTOR_CATEGORIES.includes(document.getElementById('conCategory').value) ? document.getElementById('conCategory').value : 'Other';
+    const rateRaw = document.getElementById('conRate').value;
+    const rate = rateRaw ? Number(rateRaw) : 0;
+    const rateUnit = RATE_UNITS.includes(document.getElementById('conRateUnit').value) ? document.getElementById('conRateUnit').value : 'Per Day';
     const note = document.getElementById('conNote').value.trim();
-    if(!name){ toast('Enter the contractor\'s name'); return; }
+    if(!isValidRequiredText(name)){ toast(name ? 'Name is too long' : 'Enter the contractor\'s name'); return; }
+    if(phone && !isValidPhone(phone)){ toast('Enter a valid phone number, or leave it blank'); return; }
+    if(!isValidNumber(rate)){ toast('Rate must be a valid number, 0 or more'); return; }
+    if(!isValidOptionalText(note)){ toast('Note is too long'); return; }
     const now = new Date().toISOString();
     contractors.push({ id: uid(), name, phone, category, rate, rateUnit, note, createdAt: now, updatedAt: now });
     await saveContractors();
@@ -3310,37 +4177,46 @@
     if(!con) return;
     const modal = document.getElementById('modalContent');
     modal.innerHTML = `
-      <button class="close" id="closeModal">✕</button>
+      <button class="close" id="closeModal" aria-label="Close">✕</button>
       <h2>Edit Contractor</h2>
-      <div class="field"><label>Name</label><input type="text" id="ec_name" value="${escapeHtml(con.name)}" /></div>
-      <div class="field"><label>Phone</label><input type="tel" id="ec_phone" value="${escapeHtml(con.phone||'')}" /></div>
-      <div class="field"><label>Category</label>
+      <div class="field"><label for="ec_name">Name</label><input type="text" id="ec_name" value="${escapeHtml(con.name)}" /></div>
+      <div class="field"><label for="ec_phone">Phone</label><input type="tel" id="ec_phone" value="${escapeHtml(con.phone||'')}" /></div>
+      <div class="field"><label for="ec_category">Category</label>
         <select id="ec_category">
           ${CONTRACTOR_CATEGORIES.map(c => `<option value="${c}" ${con.category===c?'selected':''}>${c}</option>`).join('')}
         </select>
       </div>
       <div style="display:flex;gap:10px;">
-        <div class="field" style="flex:1;"><label>Rate (₹)</label><input type="number" id="ec_rate" value="${Number(con.rate)||0}" /></div>
-        <div class="field" style="flex:1;"><label>Rate Unit</label>
+        <div class="field" style="flex:1;"><label for="ec_rate">Rate (₹)</label><input type="number" id="ec_rate" value="${Number(con.rate)||0}" /></div>
+        <div class="field" style="flex:1;"><label for="ec_rateunit">Rate Unit</label>
           <select id="ec_rateunit">
             ${RATE_UNITS.map(u => `<option value="${u}" ${con.rateUnit===u?'selected':''}>${u}</option>`).join('')}
           </select>
         </div>
       </div>
-      <div class="field"><label>Note (optional)</label><input type="text" id="ec_note" value="${escapeHtml(con.note||'')}" /></div>
+      <div class="field"><label for="ec_note">Note (optional)</label><input type="text" id="ec_note" value="${escapeHtml(con.note||'')}" /></div>
       <button class="btn-primary" id="saveContractorEditBtn" style="width:100%;">Save Changes</button>
     `;
     showOverlay();
     document.getElementById('closeModal').addEventListener('click', closeOverlay);
     document.getElementById('saveContractorEditBtn').addEventListener('click', async () => {
       const name = document.getElementById('ec_name').value.trim();
-      if(!name){ toast('Name is required'); return; }
+      const phone = document.getElementById('ec_phone').value.trim();
+      const rateRaw = document.getElementById('ec_rate').value;
+      const rate = rateRaw ? Number(rateRaw) : 0;
+      const note = document.getElementById('ec_note').value.trim();
+      if(!isValidRequiredText(name)){ toast(name ? 'Name is too long' : 'Name is required'); return; }
+      if(phone && !isValidPhone(phone)){ toast('Enter a valid phone number, or leave it blank'); return; }
+      if(!isValidNumber(rate)){ toast('Rate must be a valid number, 0 or more'); return; }
+      if(!isValidOptionalText(note)){ toast('Note is too long'); return; }
+      const category = document.getElementById('ec_category').value;
+      const rateUnit = document.getElementById('ec_rateunit').value;
       con.name = name;
-      con.phone = document.getElementById('ec_phone').value.trim();
-      con.category = document.getElementById('ec_category').value;
-      con.rate = Number(document.getElementById('ec_rate').value) || 0;
-      con.rateUnit = document.getElementById('ec_rateunit').value;
-      con.note = document.getElementById('ec_note').value.trim();
+      con.phone = phone;
+      con.category = CONTRACTOR_CATEGORIES.includes(category) ? category : (con.category || 'Other');
+      con.rate = rate;
+      con.rateUnit = RATE_UNITS.includes(rateUnit) ? rateUnit : (con.rateUnit || 'Per Day');
+      con.note = note;
       con.updatedAt = new Date().toISOString();
       await saveContractors();
       closeOverlay();
@@ -3355,8 +4231,11 @@
       message: `This permanently removes <b>${escapeHtml(con.name)}</b> and all of their work/advance entries. This can't be undone. Enter the password to confirm.`,
       confirmLabel: 'Remove Contractor Permanently',
       onConfirm: async () => {
+        addTombstone('contractors', con.id);
+        contractorEntries.filter(x => x.contractorId === con.id).forEach(x => addTombstone('contractorEntries', x.id));
         contractors = contractors.filter(c => c.id !== con.id);
         contractorEntries = contractorEntries.filter(x => x.contractorId !== con.id);
+        await saveTombstones();
         await saveContractors();
         await saveContractorEntries();
         document.querySelectorAll('#conViewToggle .seg-btn').forEach(b => b.classList.remove('active'));
@@ -3371,12 +4250,20 @@
     const sel = document.getElementById('conSelect');
     const conId = sel.value;
     if(!conId){ toast('Add a contractor first'); return; }
-    const qty = Number(document.getElementById('conQty').value);
+    const qtyRaw = document.getElementById('conQty').value.trim();
+    const rateRaw = document.getElementById('conEntryRate').value.trim();
+    const advanceRaw = document.getElementById('conAdvance').value.trim();
+    const qty = qtyRaw ? Number(qtyRaw) : 0;
+    const rate = rateRaw ? Number(rateRaw) : 0;
+    const advance = advanceRaw ? Number(advanceRaw) : 0;
     const unit = document.getElementById('conUnit').value || 'Per Day';
-    const rate = Number(document.getElementById('conEntryRate').value) || 0;
-    const advance = Number(document.getElementById('conAdvance').value) || 0;
     const date = document.getElementById('conDate').value || todayISO();
     const comment = document.getElementById('conComment').value.trim();
+    if(qtyRaw && !isValidNumber(qty)){ toast('Quantity must be a valid number, 0 or more'); return; }
+    if(rateRaw && !isValidNumber(rate)){ toast('Rate must be a valid number, 0 or more'); return; }
+    if(advanceRaw && !isValidNumber(advance)){ toast('Advance must be a valid number, 0 or more'); return; }
+    if(!isValidDateString(date)){ toast('Enter a valid date'); return; }
+    if(!isValidOptionalText(comment)){ toast('Comment is too long'); return; }
     if((!qty || qty <= 0) && !advance){ toast('Enter work done or an advance amount'); return; }
     contractorEntries.push({ id: uid(), contractorId: conId, date, qty: qty||0, unit, rate, advance, comment, createdAt: new Date().toISOString() });
     await saveContractorEntries();
@@ -3423,7 +4310,7 @@
     return { ws, name: con ? con.name : 'Contractor' };
   }
 
-  document.getElementById('conDownloadAllBtn').addEventListener('click', () => {
+  document.getElementById('conDownloadAllBtn').addEventListener('click', withXLSX(() => {
     const con = contractors.find(c => c.id === document.getElementById('conSelect').value);
     if(!con){ toast('Add a contractor first'); return; }
     const { ws } = buildContractorEntriesSheet(con.id, null);
@@ -3431,8 +4318,8 @@
     XLSX.utils.book_append_sheet(wb, ws, 'Work Log');
     XLSX.writeFile(wb, `Lakhan_Contractor_${con.name.replace(/[^a-z0-9]+/gi,'_')}_AllTime.xlsx`);
     toast('Contractor file downloaded');
-  });
-  document.getElementById('conDownloadMonthBtn').addEventListener('click', () => {
+  }));
+  document.getElementById('conDownloadMonthBtn').addEventListener('click', withXLSX(() => {
     const con = contractors.find(c => c.id === document.getElementById('conSelect').value);
     if(!con){ toast('Add a contractor first'); return; }
     const month = document.getElementById('conDownloadMonth').value;
@@ -3442,7 +4329,7 @@
     XLSX.utils.book_append_sheet(wb, ws, `Work Log ${month}`);
     XLSX.writeFile(wb, `Lakhan_Contractor_${con.name.replace(/[^a-z0-9]+/gi,'_')}_${month}.xlsx`);
     toast('Contractor file downloaded');
-  });
+  }));
 
   // ---------- Reports ----------
   function currentReportPeriod(){
@@ -3598,59 +4485,59 @@
   document.getElementById('reportEmployee').addEventListener('change', renderReports);
 
   // ---------- Export ----------
-  document.getElementById('exportBtn').addEventListener('click', () => {
+  document.getElementById('exportBtn').addEventListener('click', withXLSX(() => {
     if(employees.length === 0){ toast('Add workers before exporting'); return; }
     const wb = buildWorkbook();
     const suffix = selectedExportMonth() || 'AllTime';
     XLSX.writeFile(wb, `Lakhan_Construction_Register_${suffix}.xlsx`);
     toast('Excel file downloaded');
-  });
+  }));
 
-  document.getElementById('exportAttendanceBtn').addEventListener('click', () => {
+  document.getElementById('exportAttendanceBtn').addEventListener('click', withXLSX(() => {
     if(employees.length === 0){ toast('Add workers before exporting'); return; }
     const month = selectedExportMonth();
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, buildAttendanceSheet(null, month), 'Attendance');
     XLSX.writeFile(wb, `Lakhan_Attendance_${month || 'AllTime'}.xlsx`);
     toast('Attendance file downloaded');
-  });
+  }));
 
-  document.getElementById('exportAdvancesBtn').addEventListener('click', () => {
+  document.getElementById('exportAdvancesBtn').addEventListener('click', withXLSX(() => {
     if(employees.length === 0){ toast('Add workers before exporting'); return; }
     const month = selectedExportMonth();
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, buildAdvancesSheet(null, month), 'Advances');
     XLSX.writeFile(wb, `Lakhan_Advances_${month || 'AllTime'}.xlsx`);
     toast('Advances file downloaded');
-  });
+  }));
 
-  document.getElementById('exportExpensesBtn').addEventListener('click', () => {
+  document.getElementById('exportExpensesBtn').addEventListener('click', withXLSX(() => {
     if(expenses.length === 0){ toast('No site expenses recorded yet'); return; }
     const month = selectedExportMonth();
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, buildExpensesSheet(month), 'Site Expenses');
     XLSX.writeFile(wb, `Lakhan_Site_Expenses_${month || 'AllTime'}.xlsx`);
     toast('Site expenses file downloaded');
-  });
+  }));
 
-  document.getElementById('exportSalaryBtn').addEventListener('click', () => {
+  document.getElementById('exportSalaryBtn').addEventListener('click', withXLSX(() => {
     if(employees.length === 0){ toast('Add workers before exporting'); return; }
     const month = selectedExportMonth();
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, buildSalarySheet(month), month ? `Salary ${month}` : 'Salary AllTime');
     XLSX.writeFile(wb, `Lakhan_Salary_${month || 'AllTime'}.xlsx`);
     toast('Salary file downloaded');
-  });
+  }));
 
-  document.getElementById('exportContractorsBtn').addEventListener('click', () => {
+  document.getElementById('exportContractorsBtn').addEventListener('click', withXLSX(() => {
     if(contractors.length === 0){ toast('Add contractors before exporting'); return; }
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, buildContractorsSheet(), 'Contractors');
     XLSX.writeFile(wb, `Lakhan_Contractors_Summary.xlsx`);
     toast('Contractors file downloaded');
-  });
+  }));
 
-  document.getElementById('downloadIndivBtn').addEventListener('click', () => {
+  document.getElementById('downloadIndivBtn').addEventListener('click', withXLSX(() => {
     const sel = document.getElementById('reportEmployee');
     const emp = employees.find(e => e.id === sel.value);
     if(!emp){ toast('Add and select a worker first'); return; }
@@ -3658,7 +4545,7 @@
     const wb = buildIndividualWorkbook(emp, month);
     XLSX.writeFile(wb, `${emp.name.replace(/\s+/g,'_')}_${month || 'AllTime'}.xlsx`);
     toast(`${emp.name}'s report downloaded`);
-  });
+  }));
 
   document.getElementById('emailBtn').addEventListener('click', () => {
     const subject = encodeURIComponent('Lakhan Construction — Staff Register Update');
@@ -3682,7 +4569,7 @@
   function openSettingsModal(){
     const modal = document.getElementById('modalContent');
     modal.innerHTML = `
-      <button class="close" id="closeModal">✕</button>
+      <button class="close" id="closeModal" aria-label="Close">✕</button>
       <h2>Settings</h2>
 
       <div class="eyebrow" style="margin-top:0;">Google Drive sync</div>
@@ -3711,7 +4598,7 @@
               <li>Copy the <b>Client ID</b> it gives you and paste it below.</li>
             </ol>
             <div class="field" style="margin-top:10px;">
-              <label>Google Client ID</label>
+              <label for="driveClientId">Google Client ID</label>
               <input type="text" id="driveClientId" placeholder="xxxxxxxx.apps.googleusercontent.com" value="${escapeHtml(driveConfig.clientId || '')}" />
               <div class="field-hint">Saved on this device only. You only need to do this once per hosting domain.</div>
             </div>
@@ -3722,19 +4609,19 @@
 
       <div class="eyebrow">Appearance</div>
       <div class="field">
-        <label>Mode</label>
-        <div class="seg-toggle" id="themeToggle">
+        <label id="themeModeLabel">Mode</label>
+        <div class="seg-toggle" id="themeToggle" role="group" aria-labelledby="themeModeLabel">
           <button class="seg-btn ${currentTheme==='light'?'active':''}" data-theme="light">Light</button>
           <button class="seg-btn ${currentTheme==='dark'?'active':''}" data-theme="dark">Dark</button>
         </div>
       </div>
       <div class="field">
-        <label>Accent Colour</label>
-        <div class="swatch-row" id="accentRow">
-          <button class="swatch sw-orange ${currentAccent==='orange'?'on':''}" data-accent="orange" title="Orange"></button>
-          <button class="swatch sw-blue ${currentAccent==='blue'?'on':''}" data-accent="blue" title="Blue"></button>
-          <button class="swatch sw-green ${currentAccent==='green'?'on':''}" data-accent="green" title="Green"></button>
-          <button class="swatch sw-maroon ${currentAccent==='maroon'?'on':''}" data-accent="maroon" title="Maroon"></button>
+        <label id="accentColorLabel">Accent Colour</label>
+        <div class="swatch-row" id="accentRow" role="group" aria-labelledby="accentColorLabel">
+          <button class="swatch sw-orange ${currentAccent==='orange'?'on':''}" data-accent="orange" title="Orange" aria-label="Orange"></button>
+          <button class="swatch sw-blue ${currentAccent==='blue'?'on':''}" data-accent="blue" title="Blue" aria-label="Blue"></button>
+          <button class="swatch sw-green ${currentAccent==='green'?'on':''}" data-accent="green" title="Green" aria-label="Green"></button>
+          <button class="swatch sw-maroon ${currentAccent==='maroon'?'on':''}" data-accent="maroon" title="Maroon" aria-label="Maroon"></button>
         </div>
       </div>
     `;
@@ -3780,8 +4667,10 @@
   document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
 
   // ---------- Login gate ----------
-  function showLoginError(){
-    document.getElementById('loginError').style.display = 'block';
+  function showLoginError(message){
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = message || 'Incorrect password. Try again.';
+    errEl.style.display = 'block';
     const card = document.getElementById('loginCard');
     card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
     const pw = document.getElementById('loginPassword');
@@ -3791,8 +4680,22 @@
 
   async function attemptLogin(){
     const pw = document.getElementById('loginPassword').value;
-    if(pw !== APP_PASSWORD){ showLoginError(); return; }
-    try{ sessionStorage.setItem('lc_auth', 'true'); }catch(e){ /* private mode etc — still proceed for this session */ }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    let result;
+    try{
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw }),
+      });
+      if(res.ok){ result = { ok: true }; }
+      else{ const data = await res.json().catch(() => ({})); result = { ok:false, error: data.error }; }
+    }catch(e){
+      result = { ok: false, error: 'network' };
+    }
+    btn.disabled = false;
+    if(!result.ok){ showLoginError(passwordErrorMessage(result)); return; }
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('sitesScreen').classList.remove('hidden');
     await afterLogin();
@@ -3800,8 +4703,8 @@
   document.getElementById('loginBtn').addEventListener('click', attemptLogin);
   document.getElementById('loginPassword').addEventListener('keydown', (e) => { if(e.key === 'Enter') attemptLogin(); });
 
-  document.getElementById('lockBtn').addEventListener('click', () => {
-    try{ sessionStorage.removeItem('lc_auth'); }catch(e){}
+  document.getElementById('lockBtn').addEventListener('click', async () => {
+    try{ await fetch('/api/logout', { method: 'POST' }); }catch(e){}
     location.reload();
   });
 
@@ -3941,7 +4844,13 @@
       updateDriveButtons();
       // Try a silent-ish reconnect; if it fails the user just taps Connect again.
       const ok = await ensureToken();
-      if(ok){ await pullFromDrive(); await pushToDrive(); }
+      if(ok){
+        // Pull only. Pushing unconditionally on every reload bumped the
+        // Drive file version and spent API calls even with nothing to send;
+        // any genuine local edit queues its own debounced push.
+        await pullFromDrive(true);
+        await maybeDailyBackup();
+      }
       else{ setSyncStatus('local', 'Tap Settings (⚙) to reconnect Drive'); }
     } else {
       updateDriveButtons();
@@ -3950,13 +4859,20 @@
     maybeShowInstallBanner();
   }
 
-  (function initGate(){
-    let alreadyIn = false;
-    try{ alreadyIn = sessionStorage.getItem('lc_auth') === 'true'; }catch(e){ alreadyIn = false; }
-    if(alreadyIn){
+  (async function initGate(){
+    // Ask the server whether the HttpOnly session cookie is currently
+    // valid. This used to be a sessionStorage flag that anyone could set
+    // from DevTools (sessionStorage.setItem('lc_auth','true')) to skip the
+    // password entirely — the server is now the only thing that decides.
+    let authenticated = false;
+    try{
+      const res = await fetch('/api/session', { cache: 'no-store' });
+      if(res.ok){ const data = await res.json(); authenticated = !!data.authenticated; }
+    }catch(e){ authenticated = false; }
+    if(authenticated){
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('sitesScreen').classList.remove('hidden');
-      afterLogin();
+      await afterLogin();
     } else {
       setTimeout(() => document.getElementById('loginPassword').focus(), 200);
     }
