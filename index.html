@@ -1937,17 +1937,35 @@
   // actually requested, instead of on every page load. The library is ~900KB
   // and most visits never export anything. Mirrors the existing loadGIS()
   // pattern so there's one consistent way to pull in a third-party script.
+  // Tries cdnjs first, then jsdelivr as a fallback — both are allow-listed
+  // in vercel.json's CSP (script-src AND connect-src, since the service
+  // worker's own fetch of this script is governed by connect-src, not
+  // script-src) — so a single CDN hiccup doesn't block every export.
+  const XLSX_SOURCES = [
+    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+    'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+  ];
   let xlsxLoadPromise = null;
-  function ensureXLSX(){
-    if(window.XLSX) return Promise.resolve(true);
-    if(xlsxLoadPromise) return xlsxLoadPromise; // never request it twice
-    xlsxLoadPromise = new Promise((resolve) => {
+  function loadScriptOnce(src){
+    return new Promise((resolve) => {
       const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      s.onload = () => resolve(!!window.XLSX);
-      s.onerror = () => { xlsxLoadPromise = null; resolve(false); };
+      s.src = src;
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
       document.head.appendChild(s);
     });
+  }
+  async function ensureXLSX(){
+    if(window.XLSX) return true;
+    if(xlsxLoadPromise) return xlsxLoadPromise;
+    xlsxLoadPromise = (async () => {
+      for(const src of XLSX_SOURCES){
+        const ok = await loadScriptOnce(src);
+        if(ok && window.XLSX) return true;
+      }
+      xlsxLoadPromise = null; // let a later retry try again, e.g. once back online
+      return false;
+    })();
     return xlsxLoadPromise;
   }
 
@@ -2075,6 +2093,8 @@
         await kvSet(siteKey(id,'expenses'), JSON.stringify(siteData[id].expenses || []));
         await kvSet(siteKey(id,'contractors'), JSON.stringify(siteData[id].contractors || []));
         await kvSet(siteKey(id,'contractorEntries'), JSON.stringify(siteData[id].contractorEntries || []));
+        await kvSet(siteKey(id,'tombstones'), JSON.stringify(siteData[id].tombstones || []));
+        await kvSet(siteKey(id,'attendanceRoster'), JSON.stringify(siteData[id].attendanceRoster || {}));
       }
       await kvSet('lc:updated_at', remote.updatedAt || new Date().toISOString());
       // Record the version we just adopted as our baseline, so the first
@@ -2233,6 +2253,26 @@
     return out;
   }
 
+  // Normalises either shape ([ids] legacy, or {ids, updatedAt}) so old and
+  // new data read the same way — nothing on disk needs rewriting for this.
+  function normalizeRosterEntry(raw){
+    if(Array.isArray(raw)) return { ids: raw, updatedAt: '' };
+    if(raw && Array.isArray(raw.ids)) return raw;
+    return null;
+  }
+
+  function mergeAttendanceRosters(localR, remoteR){
+    const out = {};
+    const months = new Set([...Object.keys(localR||{}), ...Object.keys(remoteR||{})]);
+    months.forEach(ym => {
+      const l = normalizeRosterEntry(localR && localR[ym]);
+      const r = normalizeRosterEntry(remoteR && remoteR[ym]);
+      if(l && r) out[ym] = ((r.updatedAt||'') > (l.updatedAt||'')) ? r : l; // genuinely newer wins
+      else out[ym] = l || r;
+    });
+    return out;
+  }
+
   function mergeSiteData(local, remote){
     local = local || {}; remote = remote || {};
     // Tombstones merge first, then filter both sides — so a deletion made on
@@ -2254,9 +2294,10 @@
       contractors: applyTombstones(merged.contractors, tombs, 'contractors'),
       contractorEntries: applyTombstones(merged.contractorEntries, tombs, 'contractorEntries'),
       tombstones: tombs,
-      // Roster is per-month config; union the months, preferring whichever
-      // side actually has a list for that month (last writer wins per month).
-      attendanceRoster: Object.assign({}, local.attendanceRoster || {}, remote.attendanceRoster || {}),
+      // Roster is per-month config, each month timestamped independently —
+      // the genuinely newer edit for a given month wins, not just "whichever
+      // copy happened to be remote".
+      attendanceRoster: mergeAttendanceRosters(local.attendanceRoster, remote.attendanceRoster),
     };
   }
 
@@ -2352,7 +2393,17 @@
   // Creates today's snapshot if one doesn't exist yet. Returns true only if a
   // backup actually landed in Drive. Never throws to its caller — a backup
   // problem must not make a successful data sync look failed.
-  async function createDriveBackup(manual){
+  // Serialised the same way as pushToDrive: two near-simultaneous callers
+  // (e.g. two quick saves each triggering maybeDailyBackup right after their
+  // own successful push) queue behind each other instead of both racing
+  // findDriveFile() and creating two backup files for the same day.
+  let backupChain = Promise.resolve(false);
+  function createDriveBackup(manual){
+    backupChain = backupChain.then(() => doCreateDriveBackup(manual), () => doCreateDriveBackup(manual));
+    return backupChain;
+  }
+
+  async function doCreateDriveBackup(manual){
     if(!driveConnected) return false;
     try{
       const ok = await ensureToken();
@@ -3085,7 +3136,7 @@
     const sortMode = document.getElementById('empSort').value || 'name';
     const list = document.getElementById('empList');
     const today = todayISO();
-    const filtered = employees.filter(e =>
+    const filtered = monthEmployees.filter(e =>
       !q || e.name.toLowerCase().includes(q) || (e.phone||'').includes(q)
     ).sort((a,b) => {
       if(sortMode === 'added') return (b.joinDate||'').localeCompare(a.joinDate||'');
@@ -3337,7 +3388,15 @@
       if(!date.startsWith(ym)) return;
       Object.keys(attendance[date] || {}).forEach(id => withData.add(id));
     });
-    const ids = employees.filter(e => isEmployeeActive(e)).map(e => e.id);
+    // "All active employees" is only the right default for the CURRENT
+    // month — that's the normal "set up today's attendance" flow. For any
+    // other unconfigured month (viewing an old month, or a future one with
+    // no roster saved yet), defaulting to "currently active" would leak a
+    // worker hired later into a past month they were never part of. Past/
+    // other months without a saved roster fall back to only whoever
+    // actually has attendance data recorded for that specific month.
+    const isCurrentMonth = ym === todayISO().slice(0,7);
+    const ids = isCurrentMonth ? employees.filter(e => isEmployeeActive(e)).map(e => e.id) : [];
     withData.forEach(id => { if(!ids.includes(id)) ids.push(id); });
     return ids;
   }
@@ -3347,11 +3406,16 @@
   }
 
   function rosterForMonth(ym){
-    if(Array.isArray(attendanceRoster[ym])) return attendanceRoster[ym];
+    const raw = attendanceRoster[ym];
+    if(Array.isArray(raw)) return raw;                    // legacy shape (no timestamp)
+    if(raw && Array.isArray(raw.ids)) return raw.ids;      // current shape
     return derivedRosterForMonth(ym);
   }
 
-  function isRosterConfigured(ym){ return Array.isArray(attendanceRoster[ym]); }
+  function isRosterConfigured(ym){
+    const raw = attendanceRoster[ym];
+    return Array.isArray(raw) || !!(raw && Array.isArray(raw.ids));
+  }
 
   function openRosterModal(ym){
     const current = new Set(rosterForMonth(ym));
@@ -3389,7 +3453,7 @@
       c.checked = isEmployeeActive(emp);
     }));
     document.getElementById('saveRosterBtn').addEventListener('click', async () => {
-      attendanceRoster[ym] = cbs().filter(c => c.checked).map(c => c.dataset.id);
+      attendanceRoster[ym] = { ids: cbs().filter(c => c.checked).map(c => c.dataset.id), updatedAt: new Date().toISOString() };
       await saveAttendanceRoster();
       closeOverlay();
       renderAttendance();
@@ -3448,7 +3512,7 @@
         <div class="roster-bar${configured || monthHasAttendanceData(ym) ? '' : ' unset'}">
           <div>
             <p class="rb-title">${escapeHtml(monthLabel)} — ${monthEmployees.length} worker${monthEmployees.length===1?'':'s'}</p>
-            <p class="rb-sub">${configured ? 'Roster set for this month' : (monthHasAttendanceData(ym) ? 'Using everyone already recorded this month' : 'Not set up yet — active workers shown by default')}</p>
+            <p class="rb-sub">${configured ? 'Roster set for this month' : (monthHasAttendanceData(ym) ? 'Using everyone already recorded this month' : (ym === todayISO().slice(0,7) ? 'Not set up yet — active workers shown by default' : 'Not set up for this month — tap Manage to add workers'))}</p>
           </div>
           <button class="btn-ghost" id="manageRosterBtn">Manage</button>
         </div>`;
