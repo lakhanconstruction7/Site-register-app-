@@ -97,7 +97,7 @@
   .site-card{
     background:var(--paper); border-radius:16px; padding:16px 18px; margin-bottom:12px;
     display:flex; align-items:center; justify-content:space-between; gap:10px;
-    border:1px solid var(--line); box-shadow:0 1px 3px rgba(23,24,28,0.05); cursor:pointer;
+    border:1px solid var(--line); box-shadow:0 3px 12px -3px rgba(23,24,28,0.10); cursor:pointer;
     transition:transform .1s ease, border-color .15s ease, box-shadow .15s ease;
   }
   .site-card:active{ transform:scale(0.985); }
@@ -185,25 +185,53 @@
   /* Dashboard */
   .dash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px; }
   .dash-card{
-    background:var(--paper); border-radius:16px; padding:14px 16px;
-    box-shadow:0 1px 3px rgba(23,24,28,0.05);
+    background:var(--paper); border-radius:16px; padding:14px 15px;
+    box-shadow:0 3px 12px -3px rgba(23,24,28,0.10);
+    display:flex; align-items:center; gap:12px;
   }
-  .dash-card .lbl{ font-size:11.5px; color:var(--text-muted); font-weight:600; margin:0 0 6px; line-height:1.3; }
-  .dash-card .val{ font-family:var(--font-mono); font-size:19px; font-weight:700; color:var(--text); margin:0; }
+  .dash-card.hero{
+    grid-column:1 / -1; background:var(--ink); box-shadow:0 8px 22px -6px rgba(23,24,28,0.35);
+  }
+  .dash-card.hero .lbl{ color:#D8D6D0; }
+  .dash-card.hero .val{ color:#fff; }
+  .dc-icon{
+    width:40px; height:40px; border-radius:12px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dc-icon svg{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .dc-icon.ink{ background:var(--ink-2); color:#fff; }
+  .dc-icon.green{ background:var(--green-soft); color:var(--green); }
+  .dc-icon.red{ background:var(--red-soft); color:var(--red); }
+  .dc-icon.amber{ background:var(--amber-soft); color:var(--amber); }
+  .dc-icon.accent{ background:var(--accent-soft); color:var(--accent-dark); }
+  .dc-icon.blue{ background:var(--blue-soft); color:var(--blue); }
+  .dc-icon.hero-icon{ background:rgba(255,255,255,0.12); color:#fff; }
+  .dash-card .body{ min-width:0; }
+  .dash-card .lbl{ font-size:11.5px; color:var(--text-muted); font-weight:600; margin:0 0 4px; line-height:1.3; }
+  .dash-card .val{ font-family:var(--font-mono); font-size:19px; font-weight:700; color:var(--text); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .dash-card .val.accent{ color:var(--accent-text); }
   .dash-card .val.green{ color:var(--green); }
   .dash-card .val.red{ color:var(--red); }
   .dash-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
   .dash-action-btn{
-    display:flex; flex-direction:column; align-items:center; gap:8px;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
     background:var(--paper); border:1px solid var(--line); border-radius:16px;
     padding:16px 10px; font-family:var(--font-display); font-weight:600; font-size:12.5px; color:var(--text);
-    cursor:pointer;
+    cursor:pointer; box-shadow:0 3px 12px -3px rgba(23,24,28,0.08);
+    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
   }
-  .dash-action-btn .icon{ color:var(--accent); }
-  .dash-action-btn .icon svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .dash-action-btn:active{ transform:translateY(0) scale(0.97); }
+  .dab-icon{
+    width:42px; height:42px; border-radius:13px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dab-icon svg{ width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .dab-icon.blue{ background:var(--blue-soft); color:var(--blue); }
+  .dab-icon.amber{ background:var(--amber-soft); color:var(--amber); }
+  .dab-icon.red{ background:var(--red-soft); color:var(--red); }
+  .dab-icon.accent{ background:var(--accent-soft); color:var(--accent-dark); }
   @media (hover:hover){
-    .dash-action-btn:hover{ border-color:var(--accent); }
+    .dash-action-btn:hover{ border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 20px -6px rgba(23,24,28,0.16); }
   }
 
   /* Employee card */
@@ -213,7 +241,7 @@
     padding:14px 16px;
     margin-bottom:10px;
     display:flex; align-items:center; justify-content:space-between; gap:10px;
-    box-shadow:0 1px 3px rgba(23,24,28,0.05);
+    box-shadow:0 3px 12px -3px rgba(23,24,28,0.10);
     cursor:pointer;
     border:1px solid var(--line);
     position:relative;
@@ -359,7 +387,7 @@
   .att-row{
     background:var(--paper); border-radius:14px; padding:12px 14px;
     margin-bottom:9px; display:flex; flex-direction:column; gap:9px;
-    box-shadow:0 1px 3px rgba(23,24,28,0.05);
+    box-shadow:0 3px 12px -3px rgba(23,24,28,0.10);
     border:1px solid var(--line);
   }
   .att-row .top-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -378,7 +406,7 @@
   .report-row{
     background:var(--paper); border-radius:16px; padding:14px 16px; margin-bottom:10px;
     display:flex; align-items:center; justify-content:space-between; gap:10px;
-    border:1px solid var(--line); box-shadow:0 1px 3px rgba(23,24,28,0.05);
+    border:1px solid var(--line); box-shadow:0 3px 12px -3px rgba(23,24,28,0.10);
   }
   .report-row .name{ font-weight:600; font-size:15px; margin:0 0 3px; }
   .report-row .meta{ font-size:11.5px; color:var(--text-muted); margin:0; font-family:var(--font-mono); }
@@ -413,7 +441,7 @@
   .card-block{
     background:var(--paper); border-radius:16px; padding:16px;
     margin-bottom:16px; border:1px solid var(--line);
-    box-shadow:0 1px 3px rgba(23,24,28,0.05);
+    box-shadow:0 3px 12px -3px rgba(23,24,28,0.10);
   }
   .field{ margin-bottom:12px; }
   .field label{
@@ -520,7 +548,7 @@
     align-items:center; gap:12px;
     background:var(--paper); border:1px solid var(--line); border-radius:16px;
     padding:12px 14px; margin-bottom:16px;
-    box-shadow:0 1px 3px rgba(23,24,28,0.05);
+    box-shadow:0 3px 12px -3px rgba(23,24,28,0.10);
   }
   .install-banner.show{ display:flex; }
   .install-banner .ib-icon{
@@ -547,7 +575,7 @@
   .adv-entry{
     background:var(--paper); border-radius:14px; padding:12px 14px; margin-bottom:9px;
     display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
-    box-shadow:0 1px 3px rgba(23,24,28,0.05);
+    box-shadow:0 3px 12px -3px rgba(23,24,28,0.10);
     border:1px solid var(--line);
   }
   .adv-entry .name{ font-weight:600; font-size:14px; margin:0 0 2px; }
@@ -839,10 +867,10 @@
 
       <div class="eyebrow">Quick actions</div>
       <div class="dash-actions">
-        <button class="dash-action-btn" data-goto="attendance"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="m9 16 2 2 4-4"/></svg></span>Mark Attendance</button>
-        <button class="dash-action-btn" data-goto="advances"><span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></span>Add Advance</button>
-        <button class="dash-action-btn" data-goto="expenses"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.8a3.3 3.3 0 0 0 0 6.6h4.4a3.3 3.3 0 0 1 0 6.6H6.5"/></svg></span>Add Expense</button>
-        <button class="dash-action-btn" data-goto="contractors"><span class="icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3"/></svg></span>Contractors</button>
+        <button class="dash-action-btn" data-goto="attendance"><span class="dab-icon blue"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="m9 16 2 2 4-4"/></svg></span>Mark Attendance</button>
+        <button class="dash-action-btn" data-goto="advances"><span class="dab-icon amber"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></span>Add Advance</button>
+        <button class="dash-action-btn" data-goto="expenses"><span class="dab-icon red"><svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.8a3.3 3.3 0 0 0 0 6.6h4.4a3.3 3.3 0 0 1 0 6.6H6.5"/></svg></span>Add Expense</button>
+        <button class="dash-action-btn" data-goto="contractors"><span class="dab-icon accent"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3"/></svg></span>Contractors</button>
       </div>
     </section>
 
@@ -1736,6 +1764,19 @@
     return advances.filter(a => a.empId === empId).reduce((s,a) => s + Number(a.amount||0), 0);
   }
 
+  function dashCard(label, value, icon, iconClass, valClass){
+    return `<div class="dash-card"><span class="dc-icon ${iconClass}">${icon}</span><div class="body"><p class="lbl">${label}</p><p class="val ${valClass||''}">${value}</p></div></div>`;
+  }
+  const ICON_PEOPLE = '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/></svg>';
+  const ICON_CHECK = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>';
+  const ICON_CROSS = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg>';
+  const ICON_CLOCK = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>';
+  const ICON_WALLET = '<svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M17 12h.01"/><path d="M3 8V6a2 2 0 0 1 2-2h11"/></svg>';
+  const ICON_ZAP = '<svg viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"/></svg>';
+  const ICON_HANDCOIN = '<svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M17 8h3a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-1l4 4"/></svg>';
+  const ICON_RECEIPT = '<svg viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg>';
+  const ICON_HARDHAT = '<svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 0 1 16 0Z"/><path d="M12 4v4"/><path d="M2 18h20"/></svg>';
+
   function renderDashboard(){
     const today = todayISO();
 
@@ -1748,12 +1789,11 @@
     });
     const markedToday = presentToday+absentToday+halfToday;
 
-    document.getElementById('dashToday').innerHTML = `
-      <div class="dash-card"><p class="lbl">Workers</p><p class="val">${employees.length}</p></div>
-      <div class="dash-card"><p class="lbl">Present today</p><p class="val green">${presentToday}</p></div>
-      <div class="dash-card"><p class="lbl">Absent today</p><p class="val red">${absentToday}</p></div>
-      <div class="dash-card"><p class="lbl">Not marked yet</p><p class="val">${Math.max(employees.length - markedToday, 0)}</p></div>
-    `;
+    document.getElementById('dashToday').innerHTML =
+      dashCard('Workers', employees.length, ICON_PEOPLE, 'ink') +
+      dashCard('Present today', presentToday, ICON_CHECK, 'green', 'green') +
+      dashCard('Absent today', absentToday, ICON_CROSS, 'red', 'red') +
+      dashCard('Not marked yet', Math.max(employees.length - markedToday, 0), ICON_CLOCK, 'amber');
 
     const monthPicker = document.getElementById('dashMonthPicker');
     const currentMonth = today.slice(0,7);
@@ -1775,16 +1815,16 @@
       monthOtPay += sal.otPay;
     });
     const monthGrossWages = monthWagePay + monthOtPay;
+    const totalCashOut = monthExpenses + monthAdvances + monthConAdvance;
 
-    document.getElementById('dashMonth').innerHTML = `
-      <div class="dash-card"><p class="lbl">Total wages incl. OT</p><p class="val accent">₹${monthGrossWages.toLocaleString('en-IN')}</p></div>
-      <div class="dash-card"><p class="lbl">— of which overtime</p><p class="val accent">₹${monthOtPay.toLocaleString('en-IN')}</p></div>
-      <div class="dash-card"><p class="lbl">Worker advances given</p><p class="val accent">₹${monthAdvances.toLocaleString('en-IN')}</p></div>
-      <div class="dash-card"><p class="lbl">Site expenses</p><p class="val accent">₹${monthExpenses.toLocaleString('en-IN')}</p></div>
-      <div class="dash-card"><p class="lbl">Contractor work value</p><p class="val accent">₹${monthConWork.toLocaleString('en-IN')}</p></div>
-      <div class="dash-card"><p class="lbl">Contractor advances given</p><p class="val accent">₹${monthConAdvance.toLocaleString('en-IN')}</p></div>
-      <div class="dash-card" style="grid-column:1 / -1;"><p class="lbl">Total cash given out ${month === currentMonth ? 'this month' : 'in ' + month}</p><p class="val">₹${(monthExpenses+monthAdvances+monthConAdvance).toLocaleString('en-IN')}</p></div>
-    `;
+    document.getElementById('dashMonth').innerHTML =
+      dashCard('Total wages incl. OT', '₹'+monthGrossWages.toLocaleString('en-IN'), ICON_WALLET, 'accent', 'accent') +
+      dashCard('— of which overtime', '₹'+monthOtPay.toLocaleString('en-IN'), ICON_ZAP, 'accent', 'accent') +
+      dashCard('Worker advances given', '₹'+monthAdvances.toLocaleString('en-IN'), ICON_HANDCOIN, 'blue', 'accent') +
+      dashCard('Site expenses', '₹'+monthExpenses.toLocaleString('en-IN'), ICON_RECEIPT, 'red', 'accent') +
+      dashCard('Contractor work value', '₹'+monthConWork.toLocaleString('en-IN'), ICON_HARDHAT, 'amber', 'accent') +
+      dashCard('Contractor advances given', '₹'+monthConAdvance.toLocaleString('en-IN'), ICON_HANDCOIN, 'blue', 'accent') +
+      `<div class="dash-card hero"><span class="dc-icon hero-icon">${ICON_WALLET}</span><div class="body"><p class="lbl">Total cash given out ${month === currentMonth ? 'this month' : 'in ' + month}</p><p class="val">₹${totalCashOut.toLocaleString('en-IN')}</p></div></div>`;
   }
 
   document.querySelectorAll('.dash-action-btn').forEach(btn => {
@@ -2476,6 +2516,66 @@
     }catch(e){ /* backup is best-effort by design */ }
   }
 
+  // Rolls this device — and then every other device, via a forced push —
+  // back to a specific dated snapshot. This is a deliberate REPLACE, not a
+  // merge: mergeRemoteIntoLocal() is for combining two live edits and would
+  // never let a restore bring back something that was since deleted, which
+  // defeats the point of "go back to before I deleted that". So every
+  // per-site key is overwritten outright with exactly what the backup holds
+  // (backups already include tombstones/roster since they're built from the
+  // same loadSiteDataRaw() used for a live push, so nothing is missing).
+  //
+  // driveFileVersion is reset to null before pushing so doPushToDrive()'s
+  // conflict check is skipped — otherwise it would fetch the current (i.e.
+  // pre-restore) live file and merge it straight back in, silently undoing
+  // the restore.
+  async function restoreFromBackup(fileId, label){
+    const ok = await ensureToken();
+    if(!ok){ toast('Could not reach Drive — try again'); return false; }
+    try{
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+        headers:{ Authorization:`Bearer ${driveToken.access_token}` }
+      });
+      if(!res.ok) throw new Error('download failed');
+      const backup = await res.json();
+      if(!backup || !Array.isArray(backup.sites)) throw new Error('bad backup format');
+
+      sites = backup.sites;
+      await kvSet('lc:sites', JSON.stringify(sites));
+      const siteData = backup.siteData || {};
+      for(const site of sites){
+        const d = siteData[site.id] || {};
+        await kvSet(siteKey(site.id,'employees'), JSON.stringify(d.employees || []));
+        await kvSet(siteKey(site.id,'attendance'), JSON.stringify(d.attendance || {}));
+        await kvSet(siteKey(site.id,'advances'), JSON.stringify(d.advances || []));
+        await kvSet(siteKey(site.id,'expenses'), JSON.stringify(d.expenses || []));
+        await kvSet(siteKey(site.id,'contractors'), JSON.stringify(d.contractors || []));
+        await kvSet(siteKey(site.id,'contractorEntries'), JSON.stringify(d.contractorEntries || []));
+        await kvSet(siteKey(site.id,'tombstones'), JSON.stringify(d.tombstones || []));
+        await kvSet(siteKey(site.id,'attendanceRoster'), JSON.stringify(d.attendanceRoster || {}));
+      }
+
+      currentSiteId = null; // the site you had open may not exist in this snapshot
+      await kvSet('lc:updated_at', new Date().toISOString());
+      await refreshAfterSync();
+
+      if(driveConnected){
+        driveFileVersion = null; // force an unconditional overwrite, see note above
+        const pushed = await pushToDrive();
+        toast(pushed
+          ? `Restored the ${label} backup — synced to all devices`
+          : `Restored the ${label} backup on this device — will sync once back online`);
+      } else {
+        toast(`Restored the ${label} backup on this device`);
+      }
+      return true;
+    }catch(e){
+      console.error('Restore failed:', e);
+      toast('Restore failed — your current data is unaffected');
+      return false;
+    }
+  }
+
   function queueDriveSync(){
     if(!driveConnected) return;
     clearTimeout(syncTimer);
@@ -3025,7 +3125,7 @@
       <button class="btn-outline" id="bsBackupNow">Back up now</button>
       <button class="btn-outline" id="bsViewBackups">View backups</button>
       <div id="bsBackupList"></div>
-      <p class="field-hint" style="margin-top:12px;">Backups are separate daily snapshots in your Google Drive app folder. The live sync file is never replaced by them. Restoring from a backup isn't available in the app yet.</p>
+      <p class="field-hint" style="margin-top:12px;">Backups are separate daily snapshots in your Google Drive app folder. The live sync file is never touched by creating one — only restoring one replaces your current data, and always asks for the password first.</p>
     `;
     showOverlay();
     document.getElementById('closeModal').addEventListener('click', closeOverlay);
@@ -3075,10 +3175,34 @@
         if(!ok) throw new Error('no token');
         const files = await listBackupFiles();
         box.innerHTML = files.length
-          ? `<div class="eyebrow" style="margin-top:14px;">Backups in Drive</div><div class="card-block summary-list">${
-              files.map(f => `<div class="srow"><span>${escapeHtml((f.name||'').replace(BACKUP_PREFIX,'').replace('.json',''))}</span><b>${escapeHtml(f.createdTime ? new Date(f.createdTime).toLocaleDateString('en-IN') : '')}</b></div>`).join('')
+          ? `<div class="eyebrow" style="margin-top:14px;">Backups in Drive</div><div class="card-block summary-list" id="bsBackupRows">${
+              files.map(f => {
+                const label = escapeHtml((f.name||'').replace(BACKUP_PREFIX,'').replace('.json',''));
+                const created = escapeHtml(f.createdTime ? new Date(f.createdTime).toLocaleDateString('en-IN') : '');
+                return `<div class="srow" data-id="${f.id}" data-label="${label}" style="align-items:center;gap:10px;">
+                  <span>${label}<br><span style="font-size:11px;color:var(--text-muted);">Saved ${created}</span></span>
+                  <button class="btn-outline" style="margin-top:0;padding:7px 12px;font-size:12.5px;flex-shrink:0;" data-restore="${f.id}">Restore</button>
+                </div>`;
+              }).join('')
             }</div>`
           : '<p class="field-hint" style="margin-top:12px;">No backups yet — tap “Back up now”.</p>';
+
+        box.querySelectorAll('[data-restore]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const row = btn.closest('.srow');
+            const fileId = row.dataset.id;
+            const label = row.dataset.label;
+            confirmPasswordAction({
+              title: 'Restore this backup?',
+              message: `This replaces <b>all current data</b> — every site, worker, attendance record, advance, expense and contractor — with exactly what was saved on <b>${label}</b>. Anything added or changed since then will be lost on this device and, once synced, on every other device too. This can't be undone. Enter the password to confirm.`,
+              confirmLabel: 'Restore This Backup',
+              onConfirm: async () => {
+                toast('Restoring…');
+                await restoreFromBackup(fileId, label);
+              }
+            });
+          });
+        });
       }catch(e){
         box.innerHTML = '<p class="field-hint" style="margin-top:12px;">Could not list backups — check your connection.</p>';
       }
@@ -3136,7 +3260,7 @@
     const sortMode = document.getElementById('empSort').value || 'name';
     const list = document.getElementById('empList');
     const today = todayISO();
-    const filtered = monthEmployees.filter(e =>
+    const filtered = employees.filter(e =>
       !q || e.name.toLowerCase().includes(q) || (e.phone||'').includes(q)
     ).sort((a,b) => {
       if(sortMode === 'added') return (b.joinDate||'').localeCompare(a.joinDate||'');

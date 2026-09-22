@@ -1,5 +1,5 @@
 // Bump this on every deploy so old caches are discarded.
-const CACHE = 'lakhan-register-v17';
+const CACHE = 'lakhan-register-v19';
 
 const SHELL = [
   './',
